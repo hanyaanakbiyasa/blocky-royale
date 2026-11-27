@@ -1,0 +1,14 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Profil hanya bisa dibaca pemiliknya. Penulisan hanya lewat server (/api/action).
+    match /users/{uid} {
+      allow read: if request.auth != null && request.auth.uid == uid;
+      allow write: if false;
+    }
+    match /leaderboard/{uid} {
+      allow read: if request.auth != null;
+      allow write: if false;
+    }
+  }
+}

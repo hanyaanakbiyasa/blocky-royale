@@ -1,0 +1,12 @@
+{
+  "name": "blocky-royale",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "engines": { "node": "22.x" },
+  "scripts": {
+    "dev": "node scripts/dev.mjs",
+    "test": "node --test tests/*.test.mjs"
+  },
+  "dependencies": { "firebase-admin": "^13.0.0" }
+}

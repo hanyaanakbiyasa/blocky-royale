@@ -1,0 +1,5 @@
+.env
+.env.local
+*serviceAccount*.json
+*firebase-adminsdk*.json
+tests/

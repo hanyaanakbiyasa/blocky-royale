@@ -1,0 +1,38 @@
+{
+  "rules": {
+    "queue": {
+      "$bucket": { ".read": "auth != null", ".write": "auth != null" }
+    },
+    "rooms": {
+      "$room": {
+        "players": {
+          ".read": "auth != null",
+          "$uid": { ".write": "auth != null && auth.uid === $uid" }
+        },
+        "state": {
+          ".read": "auth != null",
+          "$uid": { ".write": "auth != null && auth.uid === $uid" }
+        },
+        "bots": { ".read": "auth != null", ".write": "auth != null" },
+        "events": {
+          ".read": "auth != null",
+          ".write": "auth != null && !newData.exists()",
+          "$e": { ".write": "auth != null && !data.exists() && newData.child('by').val() === auth.uid" }
+        },
+        "taken": {
+          ".read": "auth != null",
+          ".write": "auth != null && !newData.exists()",
+          "$item": { ".write": "auth != null && !data.exists() && newData.val() === auth.uid" }
+        },
+        "drops": { ".read": "auth != null", ".write": "auth != null" }
+      }
+    },
+    "chat": {
+      ".read": "auth != null",
+      "$msg": {
+        ".write": "auth != null && !data.exists()",
+        ".validate": "newData.hasChildren(['uid','name','rank','text','at']) && newData.child('uid').val() === auth.uid && newData.child('name').isString() && newData.child('name').val().length <= 14 && newData.child('rank').isNumber() && newData.child('text').isString() && newData.child('text').val().length > 0 && newData.child('text').val().length <= 120 && newData.child('at').val() === now"
+      }
+    }
+  }
+}

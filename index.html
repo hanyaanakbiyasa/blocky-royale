@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="id" data-theme="dark" data-joystick="right">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#0a0a12">
+  <title>Blocky Royale</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8'%3E%3Crect width='8' height='8' fill='%230a0a12'/%3E%3Cpath d='M1 2h6v5H1z' fill='%23fbbf24'/%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800;900&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <script type="importmap">{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js" } }</script>
+</head>
+<body>
+  <section id="loading" class="screen center">
+    <h1 class="logo">BLOCKY<em>ROYALE</em></h1><p id="loadText">Memuat...</p>
+  </section>
+
+  <section id="login" class="screen center" hidden>
+    <h1 class="logo">BLOCKY<em>ROYALE</em></h1>
+    <form id="loginForm" class="panel">
+      <label for="loginName">Masukkan username (Guest)</label>
+      <input id="loginName" maxlength="14" minlength="3" required autocomplete="off" placeholder="Player123" value="Player123">
+      <p id="loginError" class="error"></p>
+      <button class="btn gold">Masuk sebagai Guest</button>
+      <small>Bonus pemula: 1.000 Iron dan 1.000 Coin</small>
+    </form>
+  </section>
+
+  <main id="lobby" class="screen" hidden>
+    <canvas id="stage" aria-label="Karakter, geser untuk memutar"></canvas>
+    <div class="profile panel">
+      <div id="avatar" class="avatar"></div>
+      <div class="pinfo">
+        <div class="pname"><b id="pName"></b><button id="editName" class="iconbtn" data-icon="edit" aria-label="Ubah username"></button></div>
+        <div class="wallet"><span title="Coin" class="gold"><span data-icon="coin"></span><span id="pCoin"></span></span><span title="Iron"><span data-icon="iron"></span><span id="pIron"></span></span><span title="Token Evo" class="cyan"><span data-icon="token"></span><span id="pToken"></span></span></div>
+        <div class="exp"><span id="pBadge"></span><i><b id="expFill"></b></i></div>
+        <small id="expText"></small>
+      </div>
+    </div>
+    <nav id="actions" class="actions">
+      <button data-open="vault"><span data-icon="vault"></span>Vault</button>
+      <button data-open="shop"><span data-icon="shop"></span>Shop</button>
+      <button data-open="spin"><span data-icon="spin"></span>Spin</button>
+      <button data-open="chat"><span data-icon="chat"></span>Global Chat</button>
+      <button data-open="weapon"><span data-icon="weapon"></span>Weapon</button>
+      <button data-open="board"><span data-icon="board"></span>Leaderboard</button>
+      <button data-open="settings"><span data-icon="settings"></span>Settings</button>
+    </nav>
+    <div class="leftdock">
+      <button id="dailyBtn" class="btn ghost"><span data-icon="gift"></span> Klaim Harian</button>
+      <span id="netState" class="net"></span>
+    </div>
+    <div class="turns"><button id="turnL" class="iconbtn" data-icon="left" aria-label="Putar kiri"></button><button id="turnR" class="iconbtn" data-icon="right" aria-label="Putar kanan"></button></div>
+    <div class="playdock">
+      <div class="mode"><button id="modePrev" class="iconbtn" data-icon="left" aria-label="Mode sebelumnya"></button><div id="modeList"></div><button id="modeNext" class="iconbtn" data-icon="right" aria-label="Mode berikutnya"></button></div>
+      <small id="modeDesc"></small>
+      <button id="playBtn" class="play"><span data-icon="play"></span> PLAY MATCHMAKING</button>
+    </div>
+  </main>
+
+  <div id="modal" class="overlay" hidden>
+    <div class="window"><header><h2 id="modalTitle"></h2><button id="modalClose" class="iconbtn" data-icon="x" aria-label="Tutup"></button></header><div id="modalBody"></div></div>
+  </div>
+
+  <div id="matchmaking" class="overlay" hidden>
+    <div class="panel center"><div class="spinner"></div><h2 id="mmStatus"></h2><p id="mmTimer"></p><div id="mmFound"></div><button id="mmCancel" class="btn ghost">Cancel</button></div>
+  </div>
+
+  <section id="game" class="screen" hidden>
+    <canvas id="view"></canvas>
+    <div id="hud">
+      <div id="look"></div>
+      <div class="map"><canvas id="minimap" width="200" height="200"></canvas></div>
+      <div class="topinfo"><span><span data-icon="kill"></span><b id="hKill">0</b></span><span><span data-icon="alive"></span><b id="hAlive">0</b></span><span><span data-icon="timer"></span><b id="hZone"></b></span></div>
+      <div id="feed"></div>
+      <button id="bQuit" class="hbtn small" data-icon="exit" aria-label="Keluar match"></button>
+      <div id="slots"></div>
+      <div id="crosshair"></div><div id="hitmark" hidden></div><div id="damageFlash"></div>
+      <div id="prompt"></div>
+      <button id="bPickup" class="hbtn wide" hidden><span data-icon="pickup"></span><span id="pickName"></span></button>
+      <button id="bJumpPlane" class="btn gold jumpbig" hidden><span data-icon="chute"></span> JUMP</button>
+      <div class="stance">
+        <button id="bProne" class="hbtn" aria-label="Tiarap"><span data-icon="prone"></span><small>Tiarap</small></button>
+        <button id="bCrouch" class="hbtn" aria-label="Jongkok"><span data-icon="crouch"></span><small>Jongkok</small></button>
+        <button id="bJump" class="hbtn" aria-label="Loncat"><span data-icon="jump"></span><small>Loncat</small></button>
+      </div>
+      <div class="vitals">
+        <div id="armorIcons"></div>
+        <div class="bar mana"><b id="manaFill"></b><span id="manaText"></span></div>
+        <div class="bar hp"><b id="hpFill"></b><span id="hpText"></span></div>
+        <div id="ammoText"></div>
+      </div>
+      <div id="joy"><div id="knob"></div></div>
+      <div class="sidebtns">
+        <button id="bBag" class="hbtn" aria-label="Inventory"><span data-icon="bag"></span><small>Tas</small></button>
+        <button id="bReload" class="hbtn" aria-label="Reload"><span data-icon="reload"></span><small>Reload</small></button>
+        <button id="bDash" class="hbtn" aria-label="Dash"><span data-icon="dash"></span><small>Dash</small></button>
+        <button id="bHeal" class="hbtn" aria-label="Pulihkan"><span data-icon="heal"></span><small>Heal</small></button>
+      </div>
+      <button id="bFire" aria-label="Tembak"></button>
+      <div id="inventory" class="panel" hidden></div>
+    </div>
+  </section>
+
+  <div id="results" class="overlay" hidden></div>
+  <div id="rankup" class="overlay" hidden></div>
+  <div id="rotate"><div data-icon="phone"></div><p>Putar perangkat ke mode landscape</p></div>
+  <div id="toasts" aria-live="polite"></div>
+  <script type="module" src="js/main.js"></script>
+  <script>
+    // Pesan bila library gagal dimuat (misalnya tanpa internet)
+    setTimeout(function () { var l = document.getElementById('loading'); if (l && !l.hidden) document.getElementById('loadText').textContent = 'Masih memuat... Pastikan internet aktif dan halaman dibuka lewat server (bukan klik ganda file).'; }, 12000);
+  </script>
+</body>
+</html>
