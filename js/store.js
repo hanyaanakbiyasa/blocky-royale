@@ -61,7 +61,7 @@ export async function authenticate(mode, username, password) {
     store.admin = await isAdminSession();
     const { profile } = await callServer({ type: 'get' });
     set(profile);
-  } catch (e) { if (!e.rejected) e.message = 'Gagal terhubung ke server'; throw e; }
+  } catch (e) { if (!e.rejected) e.message = `Login gagal: ${e.message || 'tidak bisa terhubung ke server'}`; throw e; }
 }
 
 export async function createGuest(name) {

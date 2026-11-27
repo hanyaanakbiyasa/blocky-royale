@@ -23,9 +23,9 @@
     <form id="loginForm" class="panel" data-mode="guest">
       <div class="tabs" id="authTabs"><button type="button" data-m="guest" class="on">Guest</button><button type="button" data-m="login">Login</button><button type="button" data-m="register">Register</button></div>
       <label for="loginName">Username</label>
-      <input id="loginName" maxlength="14" minlength="3" required autocomplete="username" placeholder="Player123" value="Player123">
+      <input id="loginName" maxlength="32" minlength="3" required autocomplete="username" placeholder="Player123" value="Player123">
       <label for="loginPass" class="passonly">Password</label>
-      <input id="loginPass" class="passonly" type="password" minlength="6" maxlength="64" autocomplete="current-password" placeholder="min. 6 karakter">
+      <input id="loginPass" class="passonly" type="password" minlength="6" maxlength="128" autocomplete="current-password" placeholder="min. 6 karakter">
       <p id="loginError" class="error"></p>
       <button class="btn gold" id="loginBtn">Masuk sebagai Guest</button>
       <small>Bonus pemula: 1.000 Iron dan 1.000 Coin</small>

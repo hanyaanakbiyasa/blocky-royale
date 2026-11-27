@@ -113,6 +113,7 @@ Penyebab tersering: Anonymous Auth belum aktif, Firestore Database belum dibuat,
   1. Buat hash: `node scripts/hash.mjs "PasswordKuat123"`
   2. `ADMIN_USERNAME` = username admin, `ADMIN_PASSWORD_HASH` = hasil langkah 1 (diawali `scrypt:`).
   3. Login lewat tab **Login** dengan username dan password itu. Tombol **Admin** muncul di menu kiri.
+- Kalau login admin gagal, buka `/api/health`: langkah **Konfigurasi admin** memberi tahu apakah `ADMIN_USERNAME` dan `ADMIN_PASSWORD_HASH` terbaca dan formatnya benar. Env di Vercel baru berlaku setelah Redeploy. Nama admin boleh sampai 32 karakter, huruf besar/kecil tidak dibedakan, dan spasi atau tanda kutip di env diabaikan.
 - Panel Admin: tambah Coin/Iron/Token, ubah Rank, beri satu item (ID dari `shared/catalog.js`), atau beri semua item/bundle/skin, ke akun sendiri atau pemain lain (isi username pemain).
 
 ## 5d. Mystery Shop, emote, dan map
