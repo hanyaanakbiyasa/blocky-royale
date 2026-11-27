@@ -39,7 +39,7 @@ function enterLobby() {
       stage.emote(b.dataset.s ? { skin: b.dataset.s } : { name: b.dataset.e }); menu.hidden = true;
     };
     $('#stage').addEventListener('pointerdown', () => { menu.hidden = true; });
-    onProfile((p) => { renderProfile(p); stage.update(p); });
+    onProfile((p) => { renderProfile(p); stage.update(p); $('#adminBtn').hidden = !store.admin; });
   }
   stage.setActive(true); renderProfile(store.profile); stage.update(store.profile);
 }

@@ -29,7 +29,7 @@ export default async function handler(req, res) {
     }
     const evSnap = await fb.db.collection('config').doc('mystery').get();
     const event = evSnap.exists ? evSnap.data() : null;
-    if (action.type === 'get') { const s = await ref.get(); return res.status(200).json({ profile: s.exists ? s.data() : null, event }); }
+    if (action.type === 'get') { const s = await ref.get(); return res.status(200).json({ profile: s.exists ? s.data() : null, event, admin: isAdmin }); }
     const out = await fb.db.runTransaction(async (tx) => {
       const snap = await tx.get(ref);
       const now = Date.now();

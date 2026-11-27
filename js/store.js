@@ -32,7 +32,8 @@ export async function loadProfile() {
     try {
       if (!fb.uid) { store.online = true; return null; } // belum login: tampilkan layar login
       store.admin = await isAdminSession();
-      const { profile, event } = await callServer({ type: 'get' });
+      const { profile, event, admin } = await callServer({ type: 'get' });
+      store.admin = admin === true || store.admin;
       store.event = event || null; store.online = true; store.error = null;
       if (profile) { set(profile); await act({ type: 'login' }).catch(() => {}); }
       return store.profile;
@@ -59,7 +60,8 @@ export async function authenticate(mode, username, password) {
   try {
     await signInWithServerToken(mode, username, password);
     store.admin = await isAdminSession();
-    const { profile } = await callServer({ type: 'get' });
+    const { profile, admin } = await callServer({ type: 'get' });
+    store.admin = admin === true || store.admin;
     set(profile);
   } catch (e) { if (!e.rejected) e.message = `Login gagal: ${e.message || 'tidak bisa terhubung ke server'}`; throw e; }
 }

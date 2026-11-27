@@ -62,5 +62,5 @@ export async function signInWithServerToken(mode, username, password) {
   fb.uid = fb.auth.currentUser.uid;
 }
 export async function isAdminSession() {
-  try { return (await fb.auth.currentUser.getIdTokenResult()).claims.admin === true; } catch { return false; }
+  try { return fb.auth.currentUser.uid === 'admin' || (await fb.auth.currentUser.getIdTokenResult(true)).claims.admin === true; } catch { return false; }
 }
