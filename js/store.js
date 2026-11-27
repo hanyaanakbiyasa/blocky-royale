@@ -7,7 +7,7 @@ const CACHE = 'blockyroyale.cache';   // salinan profil online
 const read = (k) => { try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } };
 const write = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch { /* mode privat */ } };
 
-export const store = { profile: null, online: false, error: null, admin: false };
+export const store = { profile: null, online: false, error: null, admin: false, event: null };
 const listeners = new Set();
 export const onProfile = (fn) => listeners.add(fn);
 const emit = () => listeners.forEach((fn) => fn(store.profile));
@@ -32,8 +32,8 @@ export async function loadProfile() {
     try {
       if (!fb.uid) { store.online = true; return null; } // belum login: tampilkan layar login
       store.admin = await isAdminSession();
-      const { profile } = await callServer({ type: 'get' });
-      store.online = true; store.error = null;
+      const { profile, event } = await callServer({ type: 'get' });
+      store.event = event || null; store.online = true; store.error = null;
       if (profile) { set(profile); await act({ type: 'login' }).catch(() => {}); }
       return store.profile;
     } catch (e) { console.warn('Server tidak terjangkau:', e.message); store.online = false; store.error = 'Server: ' + e.message + ' (buka /api/health)'; }

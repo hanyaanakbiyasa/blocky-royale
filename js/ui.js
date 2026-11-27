@@ -1,5 +1,5 @@
 // Lobby, modal, hasil match, dan animasi Rank Up.
-import { ITEMS, SKINS, WEAPONS, AMMO, RANKS, BANNERS, RATES, PITY, SPIN_COST, EVO_MAX, EVO_COST, EVO_PERKS, SLOT_GROUPS, MODES } from '../shared/catalog.js';
+import { ITEMS, SKINS, WEAPONS, AMMO, RANKS, BANNERS, RATES, PITY, SPIN_COST, EVO_MAX, EVO_COST, EVO_PERKS, SLOT_GROUPS, MODES, MYSTERY_ITEMS, MYSTERY_MILESTONES, CHARACTERS } from '../shared/catalog.js';
 import { DAILY_IRON, dayKey } from '../shared/economy.js';
 import { store, act } from './store.js';
 import { fb } from './firebase.js';
@@ -43,7 +43,7 @@ export function renderProfile(p) {
 // ---------- Modal ----------
 let openModalName = null, cleanup = null, busy = false;
 const view = { vault: 'bundle', shop: 'hat', spin: 'superior', last: null };
-const TITLES = { vault: 'Vault', shop: 'Shop', spin: 'Spin', chat: 'Global Chat', weapon: 'Weapon', board: 'Leaderboard', settings: 'Settings', admin: 'Panel Admin', daily: 'Hadiah Harian' };
+const TITLES = { vault: 'Vault', shop: 'Shop', spin: 'Spin', chat: 'Global Chat', weapon: 'Weapon', board: 'Leaderboard', settings: 'Settings', admin: 'Panel Admin', mystery: 'Mystery Shop', chars: 'Karakter', daily: 'Hadiah Harian' };
 
 export function openModal(name) {
   closeModal(); openModalName = name;
@@ -148,15 +148,42 @@ const VIEWS = {
       const bar = (label, v) => `<div class="statbar"><span>${label}</span><i><b style="width:${Math.min(100, v)}%"></b></i></div>`;
       const skin = SKINS[p.weaponSkins[id]];
       return `<article class="card">${skin ? `<img src="${thumb(skin.id)}" alt="">` : ''}<h4>${w.name}</h4><small>${w.cat}${w.ammo ? ` &middot; ${AMMO[w.ammo].name} &middot; mag ${w.mag}` : ' &middot; tanpa peluru'}${w.perShot > 1 ? ` &middot; ${w.perShot} peluru/tembak` : ''}</small>
-        ${bar('Damage', (w.dmg * w.pellets) / 1.1)}${bar('Kecepatan', 100 - w.rate * 62)}${bar('Jarak', w.range / 1.8)}${skin ? `<small>Skin: ${esc(skin.name)}</small>` : ''}</article>`;
+        ${bar('Damage', (w.dmg * w.pellets) / 1.1)}${bar('Kecepatan', 100 - w.rate * 62)}${bar('Jarak', w.range / 1.8)}${skin ? `<small>Skin: ${esc(skin.name)}</small>` : ''}<button class="btn" data-hand="${skin ? skin.id : id}">Pegang di tangan</button></article>`;
     }).join('')}</div>`;
-    body.onclick = null;
+    body.onclick = (e) => {
+      const b = e.target.closest('[data-hand]'); if (!b) return;
+      document.dispatchEvent(new CustomEvent('br-hand', { detail: b.dataset.hand })); toast('Senjata dipegang di lobby');
+    };
   },
   daily(body, p) {
     const ready = p.daily < dayKey(Date.now());
     body.innerHTML = `<div class="center"><div class="huge" data-icon="gift"></div><h3>${DAILY_IRON} Iron setiap hari</h3><p>Reset pukul 00.00 WIB. Iron dipakai untuk Spin.</p>
       <button class="btn gold" ${ready ? '' : 'disabled'}>${ready ? 'Klaim sekarang' : 'Sudah diklaim hari ini'}</button></div>`;
     body.onclick = (e) => { if (e.target.closest('button')) run({ type: 'daily' }, `+${DAILY_IRON} Iron`).then((r) => r && sfx.reward()); };
+  },
+  chars(body, p) {
+    const cur = p.char || 'c_adam';
+    body.innerHTML = `<div class="grid scroll wide">${Object.entries(CHARACTERS).map(([id, c]) => {
+      const own = c.price === 0 || p.owned[id];
+      return `<article class="card"><h4>${esc(c.name)}</h4><small>${esc(c.desc)}</small>${c.skill ? `<small>Skill: <b>${esc(c.skillName)}</b> (${c.mana} mana, cd ${c.cd}s)</small>` : ''}
+        <button class="btn ${cur === id ? 'gold' : ''}" data-id="${id}" data-own="${own ? 1 : 0}" ${cur === id ? 'disabled' : ''}>${cur === id ? 'Dipakai' : own ? 'Pilih' : c.price + ' Coin'}</button></article>`;
+    }).join('')}</div>`;
+    body.onclick = (e) => { const b = e.target.closest('button'); if (b && !b.disabled) run({ type: b.dataset.own === '1' ? 'setChar' : 'buyChar', id: b.dataset.id }, 'Berhasil'); };
+  },
+  mystery(body, p) {
+    const ev = store.event, now = Date.now();
+    body.onclick = null;
+    if (!ev || ev.endsAt <= now) { body.innerHTML = '<p class="empty">Belum ada event Mystery Shop. Tunggu pengumuman admin.</p>'; return; }
+    const my = p.mystery?.ev === ev.id ? p.mystery : { spent: 0, claimed: [] };
+    const left = Math.max(1, Math.ceil((ev.endsAt - now) / 86400e3)), get = (id) => ITEMS[id] || SKINS[id];
+    body.innerHTML = `<div class="scroll"><h3>${esc(ev.title)}</h3><p>Sisa ${left} hari. Total belanja: <b>${my.spent} Iron</b></p>
+      <h4>Hadiah Transaksi</h4><div class="grid">${MYSTERY_MILESTONES.map((m, i) => { const done = my.claimed.includes(i); return card(m.id, get(m.id).rarity, get(m.id).name, `<small>Belanja ${m.spend} Iron</small><button class="btn gold" data-claim="${i}" ${my.spent >= m.spend && !done ? '' : 'disabled'}>${done ? 'Diklaim' : 'Klaim'}</button>`); }).join('')}</div>
+      <h4>Toko Eksklusif</h4><div class="grid">${MYSTERY_ITEMS.map((m) => card(m.id, get(m.id).rarity, get(m.id).name, `<button class="btn" data-buy="${m.id}" ${p.owned[m.id] ? 'disabled' : ''}>${p.owned[m.id] ? 'Dimiliki' : m.price + ' Iron'}</button>`)).join('')}</div></div>`;
+    body.onclick = (e) => {
+      const b = e.target.closest('button'); if (!b || b.disabled) return;
+      const a = b.dataset.buy ? { type: 'mysteryBuy', id: b.dataset.buy } : { type: 'mysteryClaim', index: +b.dataset.claim };
+      run(a, 'Berhasil!').then((r) => r && sfx.reward());
+    };
   },
   admin(body, p) {
     if (!store.admin) { body.innerHTML = '<p class="empty">Khusus admin.</p>'; return; }
@@ -165,12 +192,13 @@ const VIEWS = {
       <div class="row"><input id="aN" type="number" min="0" value="1000"><button class="btn" data-op="coin">+ Coin</button><button class="btn" data-op="iron">+ Iron</button><button class="btn" data-op="tokens">+ Token</button></div>
       <div class="row"><select id="aR">${RANKS.map((r, i) => `<option value="${i}">${esc(r.name)}</option>`).join('')}</select><button class="btn" data-op="rank">Set Rank</button></div>
       <div class="row"><input id="aI" placeholder="ID item / bundle / skin"><button class="btn" data-op="grant">Beri item</button></div>
+      <div class="row"><input id="aD" type="number" min="1" max="30" value="7" title="hari"><input id="aE" placeholder="Judul event" value="Mystery Shop"><button class="btn" data-op="mysteryStart">Mulai</button><button class="btn" data-op="mysteryStop">Stop</button></div>
       <button class="btn gold" data-op="grantAll">Beri SEMUA item, bundle & skin</button>
       <small>Hasil akan terlihat setelah target login ulang atau buka lobby.</small></div>`;
     body.onclick = async (e) => {
       const op = e.target.closest('[data-op]')?.dataset.op; if (!op) return;
-      const r = await run({ type: 'admin', op, target: $('#aT').value, amount: $('#aN').value, rank: $('#aR').value, id: $('#aI').value }, null);
-      if (r) toast(`Berhasil untuk ${r.target}`);
+      const r = await run({ type: 'admin', op, target: $('#aT').value, amount: op.startsWith('mystery') ? $('#aD').value : $('#aN').value, rank: $('#aR').value, id: op.startsWith('mystery') ? $('#aE').value : $('#aI').value }, null);
+      if (r) { if ('event' in r) store.event = r.event; toast(`Berhasil: ${r.target}`); }
     };
   },
   settings(body, p) {

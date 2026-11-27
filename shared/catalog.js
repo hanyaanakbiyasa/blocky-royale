@@ -149,3 +149,58 @@ export const MODES = [
   { id: 'clash', name: 'CLASH ARENA', desc: '6 petarung di arena kota, langsung bersenjata', total: 6 },
   { id: 'training', name: 'TRAINING', desc: 'Semua senjata, target diam, tanpa risiko', total: 7 },
 ];
+
+// ---- Mystery Shop (event, hanya dijual saat event aktif) ----
+bundle('b_mys_raja', 'Bundle Raja Bayangan', { torso: 0x1e1b4b, legs: 0x111827, feet: 0xfbbf24, arms: 0x1e1b4b, hair: 0x0f0f14, boxes: [['head', 0, .68, 0, .7, .2, .7, 0xfbbf24], ['head', 0, .86, 0, .14, .16, .14, 0xf0abfc], ['torso', 0, .46, -.28, 1.0, .9, .06, 0x7e22ce]] });
+bundle('b_mys_samurai', 'Bundle Samurai Merah', { torso: 0x991b1b, legs: 0x1f2937, feet: 0x111827, boxes: [['head', 0, .7, 0, .78, .16, .78, 0x7f1d1d], ['head', .3, .84, 0, .1, .26, .1, 0xfbbf24], ['torso', 0, .5, .27, .9, .12, .05, 0xfbbf24]] });
+bundle('b_mys_astro', 'Bundle Astronot Neon', { torso: 0xf8fafc, legs: 0xf8fafc, feet: 0x94a3b8, arms: 0xf8fafc, boxes: [['head', 0, .2, .02, .8, .8, .8, 0x38bdf8], ['torso', 0, .5, -.3, .8, .9, .3, 0xcbd5e1], ['torso', 0, .55, .27, .3, .3, .05, 0x22d3ee]] });
+skin('e_scar_nova', 'scar', 'SCAR Nova Mistik', 0x1e1b4b, 0xf0abfc, true);
+skin('s_awm_merah', 'awm', 'AWM Merah Darah', 0x7f1d1d, 0xfca5a5);
+export const MYSTERY_ITEMS = [
+  { id: 'b_mys_samurai', price: 800 }, { id: 'b_mys_astro', price: 1200 }, { id: 'b_mys_raja', price: 2500 },
+  { id: 's_awm_merah', price: 600 }, { id: 'e_scar_nova', price: 3000 },
+];
+// Hadiah otomatis berdasarkan total Iron yang dibelanjakan selama event
+export const MYSTERY_MILESTONES = [{ spend: 1000, id: 'b_mys_samurai' }, { spend: 3000, id: 'e_scar_nova' }, { spend: 6000, id: 'b_mys_raja' }];
+
+// ---- Senjata baru ----
+const gun = (id, name, cat, ammo, dmg, pellets, perShot, mag, rate, reload, range, spread, color, len) => { WEAPONS[id] = { name, cat, ammo, dmg, pellets, perShot, mag, rate, reload, range, spread, color, len }; };
+gun('usp', 'USP', 'Pistol', '9mm', 26, 1, 1, 12, 0.22, 1.5, 55, 0.015, 0x4b5563, 0.45);
+gun('ump', 'UMP', 'SMG', '9mm', 18, 1, 1, 25, 0.09, 1.9, 50, 0.03, 0x5b6370, 0.72);
+gun('p90', 'P90', 'SMG', '9mm', 15, 1, 1, 50, 0.07, 2.4, 45, 0.036, 0x1f2937, 0.7);
+gun('g36', 'G36', 'Rifle', '5.56', 21, 1, 1, 30, 0.11, 2.2, 95, 0.019, 0x64748b, 1.0);
+gun('famas', 'FAMAS', 'Rifle', '5.56', 19, 1, 1, 25, 0.085, 2.0, 85, 0.024, 0x3f4a3a, 0.9);
+gun('groza', 'Groza', 'Rifle', '7.62', 27, 1, 1, 30, 0.13, 2.6, 90, 0.024, 0x78552b, 1.0);
+gun('kar98', 'Kar98', 'Sniper', '7.62', 85, 1, 1, 5, 1.1, 2.8, 170, 0.003, 0x6b4a2b, 1.3);
+gun('spas12', 'SPAS12', 'Shotgun', '12g', 10, 8, 1, 8, 0.55, 3.0, 30, 0.075, 0x2d3748, 0.9);
+
+// ---- Skin & bundle baru ----
+skin('s_p90_neon', 'p90', 'P90 Neon', 0x0f172a, 0x22d3ee);
+skin('s_g36_emas', 'g36', 'G36 Emas', 0xfbbf24, 0x92600a);
+skin('s_kar_hutan', 'kar98', 'Kar98 Hutan', 0x14532d, 0x86efac);
+skin('s_spas_api', 'spas12', 'SPAS12 Api', 0x7f1d1d, 0xfb923c);
+skin('s_ump_es', 'ump', 'UMP Es', 0xbae6fd, 0x38bdf8);
+skin('e_famas_samurai', 'famas', 'FAMAS Samurai', 0x7f1d1d, 0xfde047, true);
+skin('e_kar_hantu', 'kar98', 'Kar98 Hantu', 0x1e293b, 0xa78bfa, true);
+skin('e_groza_kutub', 'groza', 'Groza Kutub', 0xe0f2fe, 0x7dd3fc, true);
+bundle('b_ninja_es', 'Bundle Ninja Es', { torso: 0xbae6fd, legs: 0x1e3a5f, feet: 0x0f172a, boxes: [['head', 0, .12, .31, .6, .3, .08, 0x0f172a], ['head', 0, .68, 0, .74, .1, .74, 0x38bdf8]] });
+bundle('b_koboi', 'Bundle Koboi Gurun', { torso: 0xb45309, legs: 0x1e3a8a, feet: 0x451a03, boxes: [['head', 0, .66, 0, .95, .06, .95, 0x7c4a1e], ['head', 0, .74, 0, .56, .2, .56, 0x7c4a1e], ['torso', 0, .55, .27, .9, .1, .05, 0xfbbf24]] });
+bundle('b_pilot', 'Bundle Pilot Ace', { torso: 0x374151, legs: 0x1f2937, feet: 0x111827, boxes: [['head', 0, .68, 0, .74, .16, .74, 0x92400e], ['head', 0, .22, .33, .6, .2, .08, 0x67e8f9], ['torso', 0, .3, .27, .5, .4, .05, 0x9ca3af]] });
+bundle('b_viking', 'Bundle Raja Viking', { torso: 0x7c2d12, legs: 0x44403c, feet: 0x292524, beard: 0xd97706, boxes: [['head', 0, .68, 0, .78, .2, .78, 0x9ca3af], ['head', .42, .8, 0, .14, .4, .14, 0xf5f5f4], ['head', -.42, .8, 0, .14, .4, .14, 0xf5f5f4]] });
+bundle('b_dokter', 'Bundle Dokter Tempur', { torso: 0xf8fafc, legs: 0x0e7490, feet: 0xf8fafc, boxes: [['head', 0, .68, 0, .7, .12, .7, 0xf8fafc], ['head', 0, .72, .36, .2, .2, .05, 0xef4444], ['torso', 0, .5, .27, .35, .35, .05, 0xef4444]] });
+bundle('b_alien', 'Bundle Alien Hijau', { torso: 0x4ade80, legs: 0x16a34a, arms: 0x4ade80, feet: 0x14532d, hair: 0x4ade80, boxes: [['head', .22, .6, .1, .08, .5, .08, 0x86efac], ['head', -.22, .6, .1, .08, .5, .08, 0x86efac], ['head', 0, .12, .33, .5, .2, .06, 0x111827]] });
+BANNERS.gurun = { name: 'Gurun Gacha', desc: 'Koboi, pilot, dan dokter medan perang', color: '#f59e0b', bundles: ['b_koboi', 'b_pilot', 'b_dokter'], evo: ['e_famas_samurai', 'e_kar_hantu'], skins: ['s_g36_emas', 's_p90_neon', 's_kar_hutan'], items: ['hat_crown', 'bag_cyber', 'shoes_neon'] };
+BANNERS.kutub = { name: 'Kutub Gacha', desc: 'Dingin, viking, dan makhluk asing', color: '#38bdf8', bundles: ['b_ninja_es', 'b_viking', 'b_alien'], evo: ['e_groza_kutub'], skins: ['s_ump_es', 's_spas_api'], items: ['acc_visor', 'trail_gold', 'chute_cyan'] };
+
+// ---- Karakter dengan skill ----
+export const CHARACTERS = {
+  c_adam: { name: 'Adam', price: 0, skill: null, desc: 'Karakter biasa, tanpa skill.' },
+  c_uno: { name: 'Uno', price: 3000, skill: 'net', skillName: 'Jaring', mana: 40, cd: 25, desc: 'Menebar jaring: musuh di area melambat selama 6 detik.' },
+  c_rena: { name: 'Rena', price: 2500, skill: 'heal', skillName: 'Pulsa Penyembuh', mana: 35, cd: 30, desc: 'Memulihkan 40 HP seketika.' },
+  c_kuro: { name: 'Kuro', price: 2800, skill: 'sprint', skillName: 'Lari Kilat', mana: 30, cd: 20, desc: 'Berlari 1.7x lebih cepat selama 5 detik.' },
+  c_bolt: { name: 'Bolt', price: 3500, skill: 'shock', skillName: 'Gelombang Kejut', mana: 45, cd: 28, desc: 'Menyerang musuh dalam radius 9 meter (30 damage).' },
+  c_terra: { name: 'Terra', price: 3200, skill: 'shield', skillName: 'Perisai', mana: 40, cd: 35, desc: 'Mengurangi damage 60% selama 6 detik.' },
+};
+// Medkit dan scope
+export const MEDS = { medkit: { name: 'Medkit', hp: 50, time: 4 }, super: { name: 'Super Medkit', hp: 100, time: 6 } };
+MODES.push({ id: 'social', name: 'SOCIAL ISLAND', desc: 'Pulau santai: tanpa senjata, jalan-jalan, emote, dan ngobrol', total: 8 });

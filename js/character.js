@@ -126,8 +126,22 @@ export function createCharacter(equipped) {
       } else if (state === 'prone' || state === 'dead') {
         body.rotation.x = Math.PI / 2; body.position.set(0, 0.28, -0.9);
         if (state === 'prone') { p.head.rotation.x = -1.2; p.armL.rotation.x = -2.8 + swing * 0.3 * (speed > 0.05); p.armR.rotation.x = -2.8 - swing * 0.3 * (speed > 0.05); }
+      } else if (state === 'wave') {
+        p.armR.rotation.z = 2.6 + Math.sin(t * 9) * 0.35; p.armL.rotation.z = -0.08; p.head.rotation.y = Math.sin(t * 2) * 0.12;
+      } else if (state === 'laugh') {
+        body.position.y = Math.abs(Math.sin(t * 14)) * 0.06; p.torso.rotation.x = Math.sin(t * 14) * 0.1; p.head.rotation.x = -0.35;
+        p.armL.rotation.set(-0.9, 0, 0.4); p.armR.rotation.set(-0.9, 0, -0.4);
+      } else if (state === 'angry') {
+        p.torso.rotation.y = Math.sin(t * 28) * 0.07; p.head.rotation.x = 0.35; p.armL.rotation.set(-0.5, 0, -0.25); p.armR.rotation.set(-0.5, 0, 0.25);
+        p.legL.rotation.x = Math.max(0, Math.sin(t * 6)) * 0.7;
+      } else if (state === 'heal') {
+        // Menggulung tangan seperti memperban
+        p.armL.rotation.set(-1.15, 0, 0.85); p.armR.rotation.set(-1.15 + Math.sin(t * 11) * 0.3, 0, -0.85 + Math.sin(t * 11) * 0.2);
+        p.torso.rotation.x = 0.18; p.head.rotation.x = 0.4;
+      } else if (state === 'sit') {
+        hips.position.y = 0.44; p.legL.rotation.x = -1.5; p.legR.rotation.x = -1.5; p.armL.rotation.x = -0.9; p.armR.rotation.x = -0.9; p.head.rotation.y = Math.sin(t * 0.6) * 0.2;
       }
-      if (ch.armed && !['chute', 'dead'].includes(state)) {
+      if (ch.armed && !['chute', 'dead', 'wave', 'laugh', 'angry', 'sit', 'heal'].includes(state)) {
         p.armR.rotation.set(state === 'prone' ? -3.0 : -1.5, 0, 0);
         p.armL.rotation.set(state === 'prone' ? -2.9 : -1.35, 0, 0.7);
       } else if (punch > 0) p.armR.rotation.x = -1.6 * Math.sin(punch * Math.PI);

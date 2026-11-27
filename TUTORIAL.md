@@ -115,6 +115,24 @@ Penyebab tersering: Anonymous Auth belum aktif, Firestore Database belum dibuat,
   3. Login lewat tab **Login** dengan username dan password itu. Tombol **Admin** muncul di menu kiri.
 - Panel Admin: tambah Coin/Iron/Token, ubah Rank, beri satu item (ID dari `shared/catalog.js`), atau beri semua item/bundle/skin, ke akun sendiri atau pemain lain (isi username pemain).
 
+## 5d. Mystery Shop, emote, dan map
+
+- **Mystery Shop**: Admin membuka Panel Admin, isi jumlah hari (default 7) dan judul, lalu tekan **Mulai**. Event disimpan di Firestore `config/mystery`. Pemain membeli barang eksklusif dengan Iron di menu **Mystery**, dan total belanja membuka hadiah otomatis (1.000, 3.000, 6.000 Iron). Daftar barang dan hadiah ada di `shared/catalog.js` (`MYSTERY_ITEMS`, `MYSTERY_MILESTONES`).
+- **Emote lobby**: ketuk karakter untuk membuka menu (Melambai, Tertawa, Marah, Duduk). Skin Evo yang sudah Level MAX menambah emote final (meteor, petir, atau orbit sesuai skin), dan di akhir emote senjata itu ada di tangan karakter.
+- **Pegang senjata**: menu Weapon, tombol **Pegang di tangan**.
+- **Map**: ada sungai dengan jembatan, pagar, tumpukan ban, serta pickup dan truk sebagai penghalang/perlindungan (belum bisa dikendarai).
+
+## 5e. Fitur gameplay baru
+
+- **Lobby**: karakter berdiri di kabin pesawat 3D (jendela berawan, kursi, lampu).
+- **Senjata baru**: USP, UMP, P90, G36, FAMAS, Groza, Kar98, SPAS12, masing-masing dengan suara tembakan berbeda (disintesis WebAudio). Ada 3 Gacha baru (Gurun, Kutub) berisi bundle, skin, dan Evo baru.
+- **Karakter dan skill**: menu **Karakter** (Adam gratis; Uno jaring, Rena heal, Kuro lari kilat, Bolt gelombang kejut, Terra perisai, dibeli dengan Coin). Skill dipakai lewat tombol skill di dalam game (butuh Mana, ada cooldown). Skill Uno dan Bolt hanya mengenai bot atau mode offline.
+- **Medkit dan Super Medkit**: ditemukan di rumah. Tombol Heal menampilkan jumlah (medkit/super); tanpa medkit tidak bisa heal. Saat heal karakter bergerak seperti memperban.
+- **Scope**: semua senjata bisa pakai Scope x2. Scope x3 dan x4 ada sebagai loot di dalam rumah. Tombol Scope berganti tingkat zoom.
+- **Rumah**: sekitar 18 rumah tambahan tersebar di map.
+- **Kendaraan**: pickup dan truk bisa dikendarai (tombol Naik/Turun muncul di dekatnya, joystick untuk gas dan belok, bisa menabrak bot). Kendaraan hanya bisa dikendarai di mode offline.
+- **Social Island**: pilih mode SOCIAL ISLAND. Tanpa senjata dan tanpa damage, ada NPC berkeliaran, tombol Emote, dan tombol Chat (Global Chat). Mode ini selalu berjalan lokal dan tidak memberi EXP.
+
 ## 6. Cara bermain
 
 | Aksi | HP | Komputer |

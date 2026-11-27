@@ -33,6 +33,7 @@
   </section>
 
   <main id="lobby" class="screen" hidden>
+    <div id="emoteMenu" class="emotemenu panel" hidden></div>
     <canvas id="stage" aria-label="Karakter, geser untuk memutar"></canvas>
     <div class="profile panel">
       <div id="avatar" class="avatar"></div>
@@ -49,6 +50,8 @@
       <button data-open="spin"><span data-icon="spin"></span>Spin</button>
       <button data-open="weapon"><span data-icon="weapon"></span>Weapon</button>
       <button data-open="admin" id="adminBtn" hidden><span data-icon="settings"></span>Admin</button>
+      <button data-open="chars"><span data-icon="bag"></span>Karakter</button>
+      <button data-open="mystery"><span data-icon="gift"></span>Mystery</button>
       <button data-open="board"><span data-icon="board"></span>Leaderboard</button>
       <button data-open="settings"><span data-icon="settings"></span>Settings</button>
     </nav>
@@ -80,6 +83,7 @@
       <div class="map"><canvas id="minimap" width="200" height="200"></canvas></div>
       <div class="topinfo"><span><span data-icon="kill"></span><b id="hKill">0</b></span><span><span data-icon="alive"></span><b id="hAlive">0</b></span><span><span data-icon="timer"></span><b id="hZone"></b></span></div>
       <div id="feed"></div>
+      <div id="scopeOv" class="scopeov" hidden></div>
       <button id="bQuit" class="hbtn small" data-icon="exit" aria-label="Keluar match"></button>
       <div id="slots"></div>
       <div id="crosshair"></div><div id="hitmark" hidden></div><div id="damageFlash"></div>
@@ -102,6 +106,11 @@
         <button id="bBag" class="hbtn" aria-label="Inventory"><span data-icon="bag"></span><small>Tas</small></button>
         <button id="bReload" class="hbtn" aria-label="Reload"><span data-icon="reload"></span><small>Reload</small></button>
         <button id="bDash" class="hbtn" aria-label="Dash"><span data-icon="dash"></span><small>Dash</small></button>
+        <button id="bSkill" class="hbtn txt" hidden><small></small></button>
+        <button id="bScope" class="hbtn txt"><small>Scope</small></button>
+        <button id="bCar" class="hbtn txt" hidden><small>Naik</small></button>
+        <button id="bEmote" class="hbtn txt" hidden><small>Emote</small></button>
+        <button id="bChat" class="hbtn txt" hidden><small>Chat</small></button>
         <button id="bHeal" class="hbtn" aria-label="Pulihkan"><span data-icon="heal"></span><small>Heal</small></button>
       </div>
       <button id="bFire" aria-label="Tembak"></button>

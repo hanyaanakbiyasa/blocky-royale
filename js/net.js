@@ -39,7 +39,7 @@ function offlineMatch(mode, profile, seed = (Math.random() * 2 ** 31) | 0) {
 }
 
 export async function findMatch(mode, profile, signal) {
-  if (mode === 'training') { await sleep(600, signal); return offlineMatch(mode, profile); }
+  if (mode === 'training' || mode === 'social') { await sleep(600, signal); return offlineMatch(mode, profile); }
   if (!store.online || !fb.rtdb) { await sleep(1800 + Math.random() * 1500, signal); return offlineMatch(mode, profile); }
   try { return await onlineMatch(mode, profile, signal); }
   catch (e) {

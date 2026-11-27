@@ -1,5 +1,5 @@
 // Aturan ekonomi. Dijalankan di server saat online (otoritatif) dan di browser saat offline.
-import { ITEMS, SKINS, BANNERS, RATES, PITY, SPIN_COST, EVO_MAX, EVO_COST, SLOT_GROUPS, MODES, rankIndex } from './catalog.js';
+import { ITEMS, SKINS, BANNERS, RATES, PITY, SPIN_COST, EVO_MAX, EVO_COST, SLOT_GROUPS, MODES, rankIndex, MYSTERY_ITEMS, MYSTERY_MILESTONES, CHARACTERS } from './catalog.js';
 
 export const STARTER = { coin: 1000, iron: 1000 };
 export const DAILY_IRON = 100;
@@ -73,11 +73,43 @@ function rollOne(p, bannerId, rng) {
 const int = (v, min, max) => Math.min(max, Math.max(min, Math.floor(Number(v) || 0)));
 
 /** Terapkan satu aksi ke salinan profil. Mengembalikan { profile, result }. */
-export function applyAction(profile, action, { now = Date.now(), rng = Math.random } = {}) {
+export function applyAction(profile, action, { now = Date.now(), rng = Math.random, event = null } = {}) {
   const p = structuredClone(profile);
   let result = {};
   switch (action?.type) {
     case 'login': p.lastLogin = now; break;
+    case 'buyChar': {
+      const c = CHARACTERS[action.id];
+      if (!c) fail('Karakter tidak ada');
+      if (c.price === 0 || p.owned[action.id]) fail('Sudah dimiliki');
+      if (p.coin < c.price) fail('Coin tidak cukup');
+      p.coin -= c.price; p.owned[action.id] = true; break;
+    }
+    case 'setChar': {
+      const c = CHARACTERS[action.id];
+      if (!c) fail('Karakter tidak ada');
+      if (c.price > 0 && !p.owned[action.id]) fail('Karakter belum dimiliki');
+      p.char = action.id; break;
+    }
+    case 'mysteryBuy': case 'mysteryClaim': {
+      if (!event || event.endsAt <= now || event.startsAt > now) fail('Mystery Shop sedang tidak aktif');
+      if (p.mystery?.ev !== event.id) p.mystery = { ev: event.id, spent: 0, claimed: [] };
+      const my = p.mystery, give = (id) => grant(p, SKINS[id]?.evo ? 'evo' : SKINS[id] ? 'skin' : 'bundle', id);
+      if (action.type === 'mysteryBuy') {
+        const m = MYSTERY_ITEMS.find((x) => x.id === action.id);
+        if (!m) fail('Barang tidak ada');
+        if (p.owned[m.id]) fail('Sudah dimiliki');
+        if (p.iron < m.price) fail('Iron tidak cukup');
+        p.iron -= m.price; my.spent += m.price; result = give(m.id);
+      } else {
+        const i = Math.floor(Number(action.index)), m = MYSTERY_MILESTONES[i];
+        if (!m) fail('Hadiah tidak ada');
+        if (my.claimed.includes(i)) fail('Sudah diklaim');
+        if (my.spent < m.spend) fail(`Belanja ${m.spend} Iron dulu`);
+        my.claimed.push(i); result = give(m.id);
+      }
+      break;
+    }
     case 'rename': {
       const name = cleanName(action.name);
       if (name === p.name) fail('Username sama dengan yang sekarang');

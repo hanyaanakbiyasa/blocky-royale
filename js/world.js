@@ -16,6 +16,12 @@ export function seeded(seed) {
 
 const TOWNS = [[0, 0], [-58, -52], [56, -55], [-55, 55], [58, 52]];
 
+/** Kotak tabrakan kendaraan parkir (diputar ke sumbu terdekat). */
+export function vehicleSolid(v) {
+  const al = Math.abs(Math.sin(v.yaw)) > 0.7, hx = (al ? v.len : v.wid) / 2, hz = (al ? v.wid : v.len) / 2;
+  return { x0: v.x - hx, x1: v.x + hx, y0: 0, y1: 1.7, z0: v.z - hz, z1: v.z + hz };
+}
+
 export function generateWorld(seed) {
   const rng = seeded(seed);
   const rand = (a, b) => a + rng() * (b - a);
@@ -174,10 +180,52 @@ export function generateWorld(seed) {
     if (i % 3) { block(x, 0, z, rand(0.7, 1.4), rand(0.4, 0.8), rand(0.7, 1.4), 0x3f8f3a, false); }
     else for (let k = 0; k < 4; k++) block(x + rand(-1, 1), 0, z + rand(-1, 1), 0.15, 0.3, 0.15, pick([0xf9d342, 0xf45b69, 0xffffff, 0xb57bee]), false);
   }
+  // Rumah-rumah tambahan tersebar
+  for (let i = 0, made = 0; i < 300 && made < 18; i++) {
+    const w = rand(5, 8.5), d = rand(5, 7.5), x = rand(-88, 88), z = rand(-88, 88);
+    if (!free(x, z, w + 3, d + 3, 2)) continue;
+    reserve(x, z, w + 3, d + 3); made++; house(x, z, w, d, rng() < 0.25);
+  }
+  // Sungai dengan jembatan (air tidak solid, jembatan punya pagar samping)
+  for (let i = 0, made = 0; i < 40 && made < 3; i++) {
+    const x = rand(-65, 65), z = rand(-65, 65), horiz = rng() < 0.5, L = 30, W = 6;
+    const w = horiz ? L : W, d = horiz ? W : L;
+    if (!free(x, z, w + 4, d + 4, 0)) continue;
+    reserve(x, z, w + 4, d + 4); made++;
+    block(x, 0, z, w, 0.04, d, 0x3b82c4, false);
+    const bx = horiz ? 4 : W + 4, bz = horiz ? W + 4 : 4;
+    block(x, 0.04, z, bx, 0.1, bz, 0x9a6b3a, false);
+    for (const s of [-1, 1]) horiz ? block(x + s * 1.9, 0.1, z, 0.2, 0.9, bz, 0x6d4a2a) : block(x, 0.1, z + s * 1.9, bx, 0.9, 0.2, 0x6d4a2a);
+  }
+  // Pagar kayu
+  for (let i = 0, made = 0; i < 300 && made < 16; i++) {
+    const x = rand(-92, 92), z = rand(-92, 92), ax = rng() < 0.5, w = ax ? 8 : 0.3, d = ax ? 0.3 : 8;
+    if (!free(x, z, w, d, 1.5)) continue;
+    reserve(x, z, w, d); made++;
+    block(x, 0, z, w, 1, d, 0xc9a46a);
+    for (let k = -3; k <= 3; k += 2) block(ax ? x + k : x, 0, ax ? z : z + k, 0.25, 1.25, 0.25, 0x8a6a3a, false);
+  }
+  // Tumpukan ban
+  for (let i = 0, made = 0; i < 200 && made < 20; i++) {
+    const x = rand(-94, 94), z = rand(-94, 94);
+    if (!free(x, z, 1.8, 1.8, 0.5)) continue;
+    reserve(x, z, 1.8, 1.8); made++;
+    const n = 1 + Math.floor(rng() * 3);
+    block(x, 0, z, 0.95, 0.3 * n, 0.95, 0x1b1b1f); if (n > 1) block(x + 0.8, 0, z, 0.95, 0.3, 0.95, 0x25252b);
+  }
+  // Kendaraan (bisa dikendarai di game; solid saat diparkir)
+  const vehicles = [];
+  for (let i = 0, made = 0; i < 300 && made < 12; i++) {
+    const x = rand(-90, 90), z = rand(-90, 90), ax = rng() < 0.5, truck = made % 3 === 2, len = truck ? 7 : 4.6, wid = truck ? 2.5 : 2;
+    if (!free(x, z, ax ? len : wid, ax ? wid : len, 1.5)) continue;
+    reserve(x, z, ax ? len : wid, ax ? wid : len);
+    const v = { id: 'v' + made, x, z, yaw: ax ? Math.PI / 2 : 0, truck, len, wid, color: pick([0xb23b3b, 0x2f6fb2, 0xc9a227, 0xe5e7eb, 0x3c9440]) };
+    v.solid = vehicleSolid(v); solids.push(v.solid); vehicles.push(v); made++;
+  }
   // Tembok batas
   for (const s of [-1, 1]) { block(s * (HALF + 0.5), 0, 0, 1, 3, HALF * 2 + 2, 0x4a5568); block(0, 0, s * (HALF + 0.5), HALF * 2 + 2, 3, 1, 0x4a5568); }
 
-  return { solids, buildings, visuals, loot: makeLoot(spots, rng), spawnRng: rng };
+  return { solids, buildings, visuals, vehicles, loot: makeLoot(spots, rng), spawnRng: rng };
 }
 
 function makeLoot(spots, rng) {
@@ -185,10 +233,13 @@ function makeLoot(spots, rng) {
   const loot = [];
   const push = (data, x, y, z) => loot.push({ id: `l${loot.length}`, ...data, x, y, z });
   const guns = Object.keys(WEAPONS).filter((w) => w !== 'fist');
-  const place = ([x, y, z]) => {
+  const place = ([x, y, z], indoor = false) => {
+    const q = rng();
+    if (indoor && q < 0.07) return push({ type: 'scope', key: rng() < 0.35 ? 4 : 3 }, x, y, z);
+    if (q < 0.17) return push({ type: 'med', key: rng() < 0.2 ? 'super' : 'medkit' }, x, y, z);
     const r = rng();
     if (r < 0.5) {
-      const key = r < 0.025 ? 'awm' : pick(guns.filter((g) => g !== 'awm'));
+      const key = r < 0.025 ? 'awm' : r < 0.04 ? 'kar98' : pick(guns.filter((g) => g !== 'awm' && g !== 'kar98'));
       const ammo = WEAPONS[key].ammo;
       push({ type: 'weapon', key, mag: WEAPONS[key].mag }, x, y, z);
       push({ type: 'ammo', key: ammo, n: AMMO[ammo].pack }, x + 0.7, y, z + 0.4);
@@ -197,7 +248,7 @@ function makeLoot(spots, rng) {
       push({ type: 'armor', key: rng() < 0.5 ? 'h' : 'v', tier: t < 0.55 ? 1 : t < 0.87 ? 2 : 3 }, x, y, z);
     } else { const key = pick(Object.keys(AMMO)); push({ type: 'ammo', key, n: AMMO[key].pack }, x, y, z); }
   };
-  spots.forEach(place);
+  spots.forEach((s) => place(s, true));
   for (let i = 0; i < 70; i++) place([-90 + rng() * 180, 0.1, -90 + rng() * 180]);
   return loot;
 }
