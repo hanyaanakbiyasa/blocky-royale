@@ -97,3 +97,10 @@ window.addEventListener('storage', (e) => {
   if (!store.online && e.key === LOCAL && e.newValue) { store.profile = read(LOCAL); emit(); }
 });
 window.addEventListener('offline', goOffline);
+
+/** Keluar dari akun: hapus sesi dan salinan lokal, lalu muat ulang ke layar login. */
+export async function logout() {
+  try { if (fb.auth) await fb.authMod.signOut(fb.auth); } catch { /* abaikan */ }
+  for (const k of [LOCAL, CACHE, 'br_hand']) { try { localStorage.removeItem(k); } catch { /* abaikan */ } }
+  location.reload();
+}

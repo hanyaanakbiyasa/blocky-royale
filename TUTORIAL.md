@@ -133,6 +133,8 @@ Penyebab tersering: Anonymous Auth belum aktif, Firestore Database belum dibuat,
 - **Kendaraan**: pickup dan truk bisa dikendarai (tombol Naik/Turun muncul di dekatnya, joystick untuk gas dan belok, bisa menabrak bot). Kendaraan hanya bisa dikendarai di mode offline.
 - **Social Island**: pilih mode SOCIAL ISLAND. Tanpa senjata dan tanpa damage, ada NPC berkeliaran, tombol Emote, dan tombol Chat (Global Chat). Mode ini selalu berjalan lokal dan tidak memberi EXP.
 
+- **Tata letak lobby**: menu Vault/Shop/Spin/Weapon/Karakter/Mystery ada di kiri (dua kolom, bisa digeser bila layar pendek) di antara kartu profil dan Global Chat. Leaderboard, Settings, dan **Log out** ada di kanan atas.
+
 ## 6. Cara bermain
 
 | Aksi | HP | Komputer |

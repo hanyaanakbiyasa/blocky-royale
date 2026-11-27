@@ -1,7 +1,7 @@
 // Lobby, modal, hasil match, dan animasi Rank Up.
 import { ITEMS, SKINS, WEAPONS, AMMO, RANKS, BANNERS, RATES, PITY, SPIN_COST, EVO_MAX, EVO_COST, EVO_PERKS, SLOT_GROUPS, MODES, MYSTERY_ITEMS, MYSTERY_MILESTONES, CHARACTERS } from '../shared/catalog.js';
 import { DAILY_IRON, dayKey } from '../shared/economy.js';
-import { store, act } from './store.js';
+import { store, act, logout } from './store.js';
 import { fb } from './firebase.js';
 import { settings, saveSettings } from './settings.js';
 import { sfx } from './audio.js';
@@ -290,6 +290,12 @@ export function initLobby(stage, onPlay) {
   $('#modeList').onclick = (e) => { const i = [...e.currentTarget.children].indexOf(e.target); if (i >= 0) { mode = i; showMode(); } };
   $('#turnL').onclick = () => stage.turn(-0.6); $('#turnR').onclick = () => stage.turn(0.6);
   $('#actions').onclick = (e) => { const b = e.target.closest('button'); if (b) openModal(b.dataset.open); };
+  $('#topright').onclick = (e) => {
+    const b = e.target.closest('button'); if (!b) return;
+    if (b.id !== 'logoutBtn') return openModal(b.dataset.open);
+    const guest = fb.auth?.currentUser?.isAnonymous || !store.online;
+    if (confirm(guest ? 'Log out? Akun Guest tidak bisa dibuka lagi setelah keluar, progresnya akan hilang.' : 'Log out dari akun ini?')) logout();
+  };
   $('#dailyBtn').onclick = () => openModal('daily');
   $('#chatBtn').onclick = () => openModal('chat');
   $('#editName').onclick = () => openModal('settings');
