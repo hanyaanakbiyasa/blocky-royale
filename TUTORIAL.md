@@ -99,6 +99,22 @@ vercel --prod
 - Global Chat bisa mengirim pesan.
 - Buka dari **dua perangkat berbeda** (rank sama), tekan Play hampir bersamaan (selisih di bawah 10 detik). Keduanya masuk match yang sama.
 
+## 5b. Diagnosis koneksi Firebase
+
+Buka `https://nama-kamu.vercel.app/api/health` (atau `http://localhost:3000/api/health`). Halaman ini menunjukkan variabel mana yang kosong dan langkah mana yang gagal, lengkap dengan petunjuk. Kalau login masih Offline, pesan penyebabnya juga muncul sebagai notifikasi saat halaman dibuka.
+
+Penyebab tersering: Anonymous Auth belum aktif, Firestore Database belum dibuat, atau `FIREBASE_SERVICE_ACCOUNT` tertempel rusak (pakai versi base64 satu baris). Profil sekarang dibaca lewat server, jadi Rules Firestore tidak lagi menentukan login.
+
+## 5c. Login, Register, dan Admin
+
+- Layar awal: loading bar, lalu pilih **Guest**, **Login**, atau **Register** (username + password). Bila sudah pernah login, game langsung ke lobby setelah loading.
+- Login/Register butuh mode Online. Password disimpan sebagai hash scrypt di koleksi Firestore `accounts` (tidak bisa dibaca dari browser).
+- **Admin**: tambahkan dua variabel di Vercel (dan `.env` lokal), lalu Redeploy.
+  1. Buat hash: `node scripts/hash.mjs "PasswordKuat123"`
+  2. `ADMIN_USERNAME` = username admin, `ADMIN_PASSWORD_HASH` = hasil langkah 1 (diawali `scrypt:`).
+  3. Login lewat tab **Login** dengan username dan password itu. Tombol **Admin** muncul di menu kiri.
+- Panel Admin: tambah Coin/Iron/Token, ubah Rank, beri satu item (ID dari `shared/catalog.js`), atau beri semua item/bundle/skin, ke akun sendiri atau pemain lain (isi username pemain).
+
 ## 6. Cara bermain
 
 | Aksi | HP | Komputer |
@@ -116,10 +132,11 @@ vercel --prod
 
 Gunakan **C** untuk jongkok di komputer, karena Ctrl+W akan menutup tab.
 
-Joystick ada di kanan sesuai rancangan. Kalau lebih nyaman di kiri, ubah di **Settings > Posisi joystick**.
+Joystick kini default di kiri. Kalau lebih nyaman di kanan, ubah di **Settings > Posisi joystick**.
 
 ## 7. Aturan game
 
+- **Ganti username**: 100 Iron.
 - **Iron**: pemula 1.000, klaim harian 100 (reset 00.00 WIB). Spin 1x = 50, 10x = 300.
 - **Coin**: pemula 1.000, didapat dari match, dipakai di Shop.
 - **Token Evo**: dari Spin, untuk menaikkan skin Evo level 1-7. Efek Evo hanya tampilan, tidak menambah damage.

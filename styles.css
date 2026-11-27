@@ -154,3 +154,27 @@ h5{color:var(--dim);font-size:13px;text-transform:uppercase;margin:6px 0 2px}
 }
 @media (max-width:640px){.actions{top:130px;left:8px;right:8px;max-width:none}.playdock{width:min(300px,calc(100% - 20px))}.leftdock{bottom:auto;top:200px}.turns{display:none}.side{width:104px;font-size:13px}.rowitem{grid-template-columns:30px 1fr auto}.rowitem>span:nth-of-type(n+3){display:none}}
 @media (prefers-reduced-motion:reduce){*{animation-duration:.01s!important;animation-iteration-count:1!important}}
+
+/* === Perubahan tata letak === */
+/* Menu Vault/Shop/Spin/Weapon dst: kolom di kiri, di tengah tinggi layar */
+.actions{top:50%;transform:translateY(-50%);right:auto;left:max(10px,env(safe-area-inset-left));flex-direction:column;max-width:none;overflow:visible;padding:0}
+.actions button{width:70px;height:56px}
+@media (max-width:900px){.actions button{width:58px;height:46px;font-size:10px}}
+@media (max-width:640px){.actions{top:50%;left:6px;right:auto;max-width:none}.leftdock{top:auto;bottom:14px}}
+/* Tombol di dalam game bulat */
+.hbtn{border-radius:50%}
+.hbtn.wide{border-radius:999px}
+.hbtn small{font-size:9px}
+.jumpbig{border-radius:999px}
+
+/* === Loading, login, admin === */
+#war{position:fixed;inset:0;width:100%;height:100%;z-index:0}
+#loading.screen,#login.screen{background:transparent;position:relative;z-index:1}
+#loading .logo,#login .logo{text-shadow:0 4px 24px #000}
+.loadbox{position:absolute;left:50%;bottom:9%;transform:translateX(-50%);width:min(460px,86vw);text-align:center}
+.loadbar{height:16px;border-radius:9px;background:#0009;border:2px solid #fff6;overflow:hidden}
+.loadbar b{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--purple),var(--cyan));transition:width .15s}
+.loadbox p{margin:8px 0 0;font-weight:700;text-shadow:0 2px 8px #000}
+.tabs{display:flex;gap:6px;margin-bottom:10px}.tabs button{flex:1;padding:8px;background:#0006;border:2px solid var(--line);color:#fff;font:inherit;font-weight:700}.tabs button.on{background:var(--purple);border-color:var(--purple)}
+#loginForm[data-mode=guest] .passonly{display:none}
+.adminform{display:grid;gap:8px}.adminform .row{display:flex;gap:6px}.adminform input,.adminform select{flex:1;min-width:0}

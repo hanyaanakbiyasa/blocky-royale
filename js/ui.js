@@ -43,7 +43,7 @@ export function renderProfile(p) {
 // ---------- Modal ----------
 let openModalName = null, cleanup = null, busy = false;
 const view = { vault: 'bundle', shop: 'hat', spin: 'superior', last: null };
-const TITLES = { vault: 'Vault', shop: 'Shop', spin: 'Spin', chat: 'Global Chat', weapon: 'Weapon', board: 'Leaderboard', settings: 'Settings', daily: 'Hadiah Harian' };
+const TITLES = { vault: 'Vault', shop: 'Shop', spin: 'Spin', chat: 'Global Chat', weapon: 'Weapon', board: 'Leaderboard', settings: 'Settings', admin: 'Panel Admin', daily: 'Hadiah Harian' };
 
 export function openModal(name) {
   closeModal(); openModalName = name;
@@ -158,18 +158,33 @@ const VIEWS = {
       <button class="btn gold" ${ready ? '' : 'disabled'}>${ready ? 'Klaim sekarang' : 'Sudah diklaim hari ini'}</button></div>`;
     body.onclick = (e) => { if (e.target.closest('button')) run({ type: 'daily' }, `+${DAILY_IRON} Iron`).then((r) => r && sfx.reward()); };
   },
+  admin(body, p) {
+    if (!store.admin) { body.innerHTML = '<p class="empty">Khusus admin.</p>'; return; }
+    body.innerHTML = `<div class="adminform scroll">
+      <label>Target username (kosongkan = akun admin ini)<input id="aT" maxlength="14" placeholder="username pemain"></label>
+      <div class="row"><input id="aN" type="number" min="0" value="1000"><button class="btn" data-op="coin">+ Coin</button><button class="btn" data-op="iron">+ Iron</button><button class="btn" data-op="tokens">+ Token</button></div>
+      <div class="row"><select id="aR">${RANKS.map((r, i) => `<option value="${i}">${esc(r.name)}</option>`).join('')}</select><button class="btn" data-op="rank">Set Rank</button></div>
+      <div class="row"><input id="aI" placeholder="ID item / bundle / skin"><button class="btn" data-op="grant">Beri item</button></div>
+      <button class="btn gold" data-op="grantAll">Beri SEMUA item, bundle & skin</button>
+      <small>Hasil akan terlihat setelah target login ulang atau buka lobby.</small></div>`;
+    body.onclick = async (e) => {
+      const op = e.target.closest('[data-op]')?.dataset.op; if (!op) return;
+      const r = await run({ type: 'admin', op, target: $('#aT').value, amount: $('#aN').value, rank: $('#aR').value, id: $('#aI').value }, null);
+      if (r) toast(`Berhasil untuk ${r.target}`);
+    };
+  },
   settings(body, p) {
     body.innerHTML = `<form class="form scroll">
-      <label>Username<span class="row"><input name="name" maxlength="14" value="${esc(p.name)}"><button class="btn">Simpan</button></span></label>
+      <label>Username<span class="row"><input name="name" maxlength="14" value="${esc(p.name)}"><button class="btn">Ganti (100 Iron)</button></span></label>
       <label>Volume<input type="range" name="volume" min="0" max="1" step="0.05" value="${settings.volume}"></label>
       <label>Sensitivitas kamera<input type="range" name="sensitivity" min="0.3" max="2.5" step="0.1" value="${settings.sensitivity}"></label>
       <label>Tema<select name="theme"><option value="dark">Gelap</option><option value="light">Terang</option></select></label>
-      <label>Posisi joystick<select name="joystick"><option value="right">Kanan</option><option value="left">Kiri</option></select></label>
+      <label>Posisi joystick<select name="joystick"><option value="left">Kiri</option><option value="right">Kanan</option></select></label>
       <button type="button" class="btn ghost" id="fsBtn">Layar penuh</button>
       <p class="note">${store.online ? `Online. ID: ${esc(fb.uid)}` : 'Offline: data disimpan di perangkat ini.'}<br>Total: ${p.stats.matches} match, ${p.stats.wins} menang, ${p.stats.kills} kill, ${p.stats.assists} assist.</p></form>`;
     const f = body.querySelector('form');
     f.theme.value = settings.theme; f.joystick.value = settings.joystick;
-    f.onsubmit = (e) => { e.preventDefault(); run({ type: 'rename', name: f.elements.name.value }, 'Username disimpan'); };
+    f.onsubmit = (e) => { e.preventDefault(); run({ type: 'rename', name: f.elements.name.value }, 'Username diganti (-100 Iron)'); };
     f.oninput = (e) => { const t = e.target; if (t.name !== 'name') saveSettings({ [t.name]: t.type === 'range' ? Number(t.value) : t.value }); };
     f.querySelector('#fsBtn').onclick = goLandscape;
     body.onclick = null;
@@ -248,6 +263,7 @@ export function initLobby(stage, onPlay) {
   $('#turnL').onclick = () => stage.turn(-0.6); $('#turnR').onclick = () => stage.turn(0.6);
   $('#actions').onclick = (e) => { const b = e.target.closest('button'); if (b) openModal(b.dataset.open); };
   $('#dailyBtn').onclick = () => openModal('daily');
+  $('#chatBtn').onclick = () => openModal('chat');
   $('#editName').onclick = () => openModal('settings');
   $('#modalClose').onclick = closeModal;
   $('#modal').addEventListener('pointerdown', (e) => { if (e.target.id === 'modal') closeModal(); });

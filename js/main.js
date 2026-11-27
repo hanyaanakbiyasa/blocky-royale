@@ -1,5 +1,6 @@
 // Titik masuk: login guest, lobby, matchmaking, lalu game.
-import { store, loadProfile, createGuest, onProfile, act } from './store.js';
+import { store, loadProfile, createGuest, authenticate, onProfile, act } from './store.js';
+import { startWar } from './war.js';
 import { applySettings } from './settings.js';
 import { $, hydrate, toast, renderProfile, initLobby, closeModal, showResults, goLandscape, rankBadge, esc } from './ui.js';
 import { createStage } from './preview.js';
@@ -8,11 +9,14 @@ import { startGame } from './game.js';
 
 applySettings();
 hydrate(document);
-const show = (id) => { for (const s of ['loading', 'login', 'lobby', 'game']) $(`#${s}`).hidden = s !== id; };
+const stopWar = (() => { let stop = startWar($('#war')); return () => { stop?.(); stop = null; $('#war').hidden = true; }; })();
+const show = (id) => { for (const s of ['loading', 'login', 'lobby', 'game']) $(`#${s}`).hidden = s !== id; if (id === 'lobby' || id === 'game') stopWar(); };
+const setPct = (n) => { n = Math.min(100, Math.round(n)); $('#loadFill').style.width = n + '%'; $('#loadPct').textContent = n + '%'; };
+let pct = 0; const prog = setInterval(() => { pct += (90 - pct) * 0.04; setPct(pct); }, 80);
 
 let stage;
 function enterLobby() {
-  show('lobby');
+  show('lobby'); $('#adminBtn').hidden = !store.admin;
   if (!stage) {
     stage = createStage($('#stage'));
     initLobby(stage, play);
@@ -72,15 +76,29 @@ async function finish(result) {
 window.addEventListener('br-offline', () => toast('Koneksi terputus, mode offline'));
 window.addEventListener('online', () => toast('Internet tersambung. Muat ulang halaman untuk kembali online.'));
 
+const LABEL = { guest: 'Masuk sebagai Guest', login: 'Login', register: 'Daftar & Masuk' };
+$('#authTabs').onclick = (e) => {
+  const m = e.target.dataset.m; if (!m) return;
+  $('#loginForm').dataset.mode = m; $('#loginBtn').textContent = LABEL[m]; $('#loginError').textContent = '';
+  $('#loginPass').required = m !== 'guest';
+  for (const b of $('#authTabs').children) b.classList.toggle('on', b === e.target);
+};
 $('#loginForm').onsubmit = async (e) => {
   e.preventDefault();
-  const btn = e.target.querySelector('button'); btn.disabled = true;
-  try { await createGuest($('#loginName').value); enterLobby(); toast('Hadiah pemula: 1.000 Iron'); }
+  const btn = $('#loginBtn'); btn.disabled = true; $('#loginError').textContent = '';
+  const mode = $('#loginForm').dataset.mode;
+  try {
+    if (mode === 'guest') await createGuest($('#loginName').value);
+    else await authenticate(mode, $('#loginName').value, $('#loginPass').value);
+    enterLobby(); if (mode !== 'login') toast('Hadiah pemula: 1.000 Iron');
+  }
   catch (err) { $('#loginError').textContent = err.message; }
   finally { btn.disabled = false; }
 };
 
-loadProfile().catch((e) => { console.error(e); }).then(() => {
+loadProfile().catch((e) => { console.error(e); }).then(async () => {
+  clearInterval(prog); setPct(100); $('#loadText').textContent = 'Siap!'; await new Promise((r) => setTimeout(r, 450));
+  if (store.error) toast(store.error);
   if (store.profile) enterLobby();
   else show('login');
 });

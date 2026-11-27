@@ -1,6 +1,6 @@
 // Pengaturan per perangkat.
 const KEY = 'blockyroyale.settings';
-const defaults = { volume: 0.6, sensitivity: 1, theme: 'dark', joystick: 'right' };
+const defaults = { volume: 0.6, sensitivity: 1, theme: 'dark', joystick: 'left' };
 let saved = {};
 try { saved = JSON.parse(localStorage.getItem(KEY)) || {}; } catch { /* abaikan */ }
 export const settings = { ...defaults, ...saved };

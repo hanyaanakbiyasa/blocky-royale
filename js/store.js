@@ -1,5 +1,5 @@
 // Penyimpanan profil: Firebase (online) dengan localStorage sebagai cadangan offline.
-import { fb, initFirebase, callServer } from './firebase.js';
+import { fb, initFirebase, callServer, signInGuest, signInWithServerToken, isAdminSession } from './firebase.js';
 import { newProfile, applyAction } from '../shared/economy.js';
 
 const LOCAL = 'blockyroyale.local';   // progres mode offline
@@ -7,7 +7,7 @@ const CACHE = 'blockyroyale.cache';   // salinan profil online
 const read = (k) => { try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } };
 const write = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch { /* mode privat */ } };
 
-export const store = { profile: null, online: false };
+export const store = { profile: null, online: false, error: null, admin: false };
 const listeners = new Set();
 export const onProfile = (fn) => listeners.add(fn);
 const emit = () => listeners.forEach((fn) => fn(store.profile));
@@ -30,12 +30,15 @@ export async function loadProfile() {
   const ok = await initFirebase();
   if (ok && fb.server) {
     try {
-      const ref = fb.fs.doc(fb.store, 'users', fb.uid);
-      const snap = await fb.fs.getDocFromServer(ref);
-      store.online = true;
-      if (snap.exists()) { set(snap.data()); await act({ type: 'login' }).catch(() => {}); watch(); }
+      if (!fb.uid) { store.online = true; return null; } // belum login: tampilkan layar login
+      store.admin = await isAdminSession();
+      const { profile } = await callServer({ type: 'get' });
+      store.online = true; store.error = null;
+      if (profile) { set(profile); await act({ type: 'login' }).catch(() => {}); }
       return store.profile;
-    } catch (e) { console.warn('Database tidak terjangkau:', e.message); store.online = false; }
+    } catch (e) { console.warn('Server tidak terjangkau:', e.message); store.online = false; store.error = 'Server: ' + e.message + ' (buka /api/health)'; }
+  } else if (!ok) { store.error = fb.error || 'Firebase tidak aktif (buka /api/health)'; }
+  if (store.error) { try { window.__brError = store.error; } catch {} } {
   }
   const local = read(LOCAL) || read(CACHE);
   if (local) set(local);
@@ -50,11 +53,23 @@ function watch() {
   }, (e) => console.warn(e.message));
 }
 
+/** Login atau daftar dengan username + password (mode: 'login' | 'register'). */
+export async function authenticate(mode, username, password) {
+  if (!store.online) throw new Error('Login akun butuh koneksi online');
+  try {
+    await signInWithServerToken(mode, username, password);
+    store.admin = await isAdminSession();
+    const { profile } = await callServer({ type: 'get' });
+    set(profile);
+  } catch (e) { if (!e.rejected) e.message = 'Gagal terhubung ke server'; throw e; }
+}
+
 export async function createGuest(name) {
   if (store.online) {
     try {
+      await signInGuest();
       const { profile } = await callServer({ type: 'create', name });
-      set(profile); watch(); return;
+      set(profile); return;
     } catch (e) { if (e.rejected) throw e; store.online = false; window.dispatchEvent(new CustomEvent('br-offline')); }
   }
   set(newProfile(name, Date.now()));

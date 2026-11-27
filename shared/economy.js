@@ -6,6 +6,7 @@ export const DAILY_IRON = 100;
 const SLOTS = SLOT_GROUPS.flatMap((g) => g.slots.map((s) => s[0]));
 const OUTFIT = ['hat', 'acc', 'clothes', 'pants', 'shoes'];
 
+export const RENAME_COST = 100;
 export class GameError extends Error {}
 const fail = (m) => { throw new GameError(m); };
 const has = (o, k) => typeof k === 'string' && Object.prototype.hasOwnProperty.call(o, k);
@@ -77,7 +78,12 @@ export function applyAction(profile, action, { now = Date.now(), rng = Math.rand
   let result = {};
   switch (action?.type) {
     case 'login': p.lastLogin = now; break;
-    case 'rename': p.name = cleanName(action.name); break;
+    case 'rename': {
+      const name = cleanName(action.name);
+      if (name === p.name) fail('Username sama dengan yang sekarang');
+      if (p.iron < RENAME_COST) fail(`Butuh ${RENAME_COST} Iron untuk ganti username`);
+      p.iron -= RENAME_COST; p.name = name; break;
+    }
     case 'daily': {
       const today = dayKey(now);
       if (p.daily >= today) fail('Hadiah hari ini sudah diklaim');

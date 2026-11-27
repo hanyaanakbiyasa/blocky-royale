@@ -18,7 +18,7 @@ const PUBLIC = /^(index\.html|styles\.css|js\/[\w-]+\.js|shared\/[\w-]+\.js)$/;
 createServer(async (req, res) => {
   const path = decodeURIComponent(new URL(req.url, 'http://x').pathname);
   try {
-    const api = path.match(/^\/api\/(config|action)$/);
+    const api = path.match(/^\/api\/(config|action|health|auth)$/);
     if (api) {
       let body = '';
       for await (const chunk of req) { body += chunk; if (body.length > 1e4) throw new Error('Body terlalu besar'); }

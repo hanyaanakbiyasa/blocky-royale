@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="id" data-theme="dark" data-joystick="right">
+<html lang="id" data-theme="dark" data-joystick="left">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
@@ -12,17 +12,22 @@
   <script type="importmap">{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js" } }</script>
 </head>
 <body>
+  <canvas id="war" aria-hidden="true"></canvas>
   <section id="loading" class="screen center">
-    <h1 class="logo">BLOCKY<em>ROYALE</em></h1><p id="loadText">Memuat...</p>
+    <h1 class="logo">BLOCKY<em>ROYALE</em></h1>
+    <div class="loadbox"><div class="loadbar"><b id="loadFill"></b></div><p><span id="loadText">Memuat...</span> <strong id="loadPct">0%</strong></p></div>
   </section>
 
   <section id="login" class="screen center" hidden>
     <h1 class="logo">BLOCKY<em>ROYALE</em></h1>
-    <form id="loginForm" class="panel">
-      <label for="loginName">Masukkan username (Guest)</label>
-      <input id="loginName" maxlength="14" minlength="3" required autocomplete="off" placeholder="Player123" value="Player123">
+    <form id="loginForm" class="panel" data-mode="guest">
+      <div class="tabs" id="authTabs"><button type="button" data-m="guest" class="on">Guest</button><button type="button" data-m="login">Login</button><button type="button" data-m="register">Register</button></div>
+      <label for="loginName">Username</label>
+      <input id="loginName" maxlength="14" minlength="3" required autocomplete="username" placeholder="Player123" value="Player123">
+      <label for="loginPass" class="passonly">Password</label>
+      <input id="loginPass" class="passonly" type="password" minlength="6" maxlength="64" autocomplete="current-password" placeholder="min. 6 karakter">
       <p id="loginError" class="error"></p>
-      <button class="btn gold">Masuk sebagai Guest</button>
+      <button class="btn gold" id="loginBtn">Masuk sebagai Guest</button>
       <small>Bonus pemula: 1.000 Iron dan 1.000 Coin</small>
     </form>
   </section>
@@ -42,12 +47,13 @@
       <button data-open="vault"><span data-icon="vault"></span>Vault</button>
       <button data-open="shop"><span data-icon="shop"></span>Shop</button>
       <button data-open="spin"><span data-icon="spin"></span>Spin</button>
-      <button data-open="chat"><span data-icon="chat"></span>Global Chat</button>
       <button data-open="weapon"><span data-icon="weapon"></span>Weapon</button>
+      <button data-open="admin" id="adminBtn" hidden><span data-icon="settings"></span>Admin</button>
       <button data-open="board"><span data-icon="board"></span>Leaderboard</button>
       <button data-open="settings"><span data-icon="settings"></span>Settings</button>
     </nav>
     <div class="leftdock">
+      <button id="chatBtn" class="btn ghost" data-open="chat"><span data-icon="chat"></span> Global Chat</button>
       <button id="dailyBtn" class="btn ghost"><span data-icon="gift"></span> Klaim Harian</button>
       <span id="netState" class="net"></span>
     </div>
