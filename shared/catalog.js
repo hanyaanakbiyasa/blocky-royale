@@ -94,7 +94,7 @@ add('glove_red', 'glove', 'Sarung Tinju Merah', 350, { glove: 0xdc2626 });
 add('glove_gold', 'glove', 'Sarung Tinju Emas', 1000, { glove: 0xfbbf24 }, 'epic');
 
 // ---- Bundle (hanya dari Spin). Semua desain orisinal.
-const bundle = (id, name, look) => add(id, 'bundle', name, 0, look, 'legend');
+const bundle = (id, name, look, rarity = 'legend', skill = null) => { add(id, 'bundle', name, 0, look, rarity); if (skill) ITEMS[id].skill = skill; };
 const robe = (c, trim) => ({ torso: c, arms: 0, legs: c, boxes: [['torso', .22, .38, .24, .14, .8, .04, trim], ['torso', 0, 0, .25, .86, .1, .04, trim]] });
 bundle('b_zeus', 'Bundle Zeus', { torso: 0xf4f1e8, legs: 0xf4f1e8, feet: 0xc9962c, hair: 0xeef2f7, beard: 0xeef2f7, boxes: [['head', 0, .06, .31, .52, .24, .14, 0xeef2f7], ['head', 0, .66, 0, .68, .08, .68, 0xfbbf24], ['torso', -.2, .4, .24, .18, .8, .05, 0xfbbf24], ['armR', 0, -.7, .3, .08, .1, .55, 0xfde047], ['armR', .1, -.7, .62, .08, .1, .25, 0xfde047]] });
 bundle('b_socrates', 'Bundle Socrates', { torso: 0xe7ddc4, legs: 0xe7ddc4, feet: 0x8b5a2b, hair: 0xb8b8b8, beard: 0xb8b8b8, boxes: [['head', 0, .03, .3, .5, .3, .12, 0xb8b8b8], ['torso', .2, .4, .24, .24, .82, .05, 0x9c4a34], ['armL', 0, -.72, .22, .12, .12, .34, 0xd9c28f]] });
@@ -110,6 +110,14 @@ bundle('b_aura', 'Bundle Penjaga Aura', { torso: 0x0f766e, arms: 0xd9a47a, legs:
 bundle('b_pendekar', 'Bundle Pendekar Bintang', { torso: 0x7f1d1d, arms: 0x7f1d1d, legs: 0x111827, feet: 0xffffff, hair: 0xfacc15, boxes: [['head', -.18, .8, 0, .18, .3, .5, 0xfacc15], ['head', .16, .86, 0, .18, .42, .4, 0xfacc15], ['torso', 0, .42, .245, .24, .24, .03, 0xfacc15], ['torso', 0, .08, 0, .86, .12, .5, 0x000000]] });
 bundle('b_mainan', 'Bundle Si Balok Pemula', { skin: 0x86efac, torso: 0xf97316, arms: 0x86efac, legs: 0x7c3aed, feet: 0x475569, hair: 0x86efac, beard: null, boxes: [['head', 0, .72, 0, .3, .14, .3, 0x86efac], ['torso', 0, .4, .24, .34, .34, .03, 0xffffff]] });
 bundle('b_robot', 'Bundle Robot Kaleng', { skin: 0x94a3b8, torso: 0x64748b, arms: 0x94a3b8, legs: 0x475569, feet: 0x334155, hair: 0x64748b, beard: null, boxes: [['head', 0, .82, 0, .06, .28, .06, 0x334155], ['head', 0, 1.0, 0, .14, .14, .14, 0xef4444], ['head', 0, .35, .33, .54, .18, .04, 0x22d3ee], ['torso', 0, .42, .245, .46, .34, .05, 0x1e293b], ['torso', -.1, .42, .28, .1, .1, .03, 0x22c55e], ['torso', .1, .42, .28, .1, .1, .03, 0xfbbf24]] });
+
+// Kampung Durian Runtuh Gacha
+bundle('b_upin', 'Bundle Upin', { skin: 0xf1c49b, torso: 0xfacc15, arms: 0xfacc15, legs: 0x2563eb, feet: 0x1d4ed8, hair: 0x171717, beard: null, boxes: [['head', -.12, .78, 0, .09, .16, .09, 0x171717], ['head', .12, .78, 0, .09, .16, .09, 0x171717], ['torso', 0, .44, .245, .12, .5, .035, 0xffffff], ['torso', -.32, .45, 0, .12, .2, .12, 0xfacc15], ['torso', .32, .45, 0, .12, .2, .12, 0xfacc15] ] }, 'mythical', { type: 'sandal', chance: 0.08, cooldown: 2.5 });
+bundle('b_ipin', 'Bundle Ipin', { skin: 0xf1c49b, torso: 0x2563eb, arms: 0x2563eb, legs: 0x2563eb, feet: 0x1d4ed8, hair: 0x171717, beard: null, boxes: [['head', 0, .8, 0, .1, .16, .1, 0x171717], ['torso', 0, .44, .245, .12, .5, .035, 0xffffff], ['torso', -.32, .45, 0, .12, .2, .12, 0x2563eb], ['torso', .32, .45, 0, .12, .2, .12, 0x2563eb]] }, 'mythical', { type: 'chicken', chance: 0.07, cooldown: 3 });
+bundle('b_ehsan', 'Bundle Ehsan', { skin: 0xf0bd91, torso: 0xf472b6, arms: 0xf472b6, legs: 0x7c2d12, feet: 0x292524, hair: 0x171717, beard: null, boxes: [['head', 0, .68, 0, .72, .12, .7, 0x171717], ['torso', 0, .45, .25, .28, .24, .04, 0xffffff]] }, 'rare');
+bundle('b_fizi', 'Bundle Fizi', { skin: 0xf0bd91, torso: 0xf97316, arms: 0xf97316, legs: 0x1e3a8a, feet: 0x292524, hair: 0x171717, beard: null, boxes: [['head', 0, .68, 0, .7, .12, .7, 0x171717], ['head', 0, .54, -.31, .5, .12, .04, 0x171717]] }, 'rare');
+bundle('b_mail', 'Bundle Mail', { skin: 0xf0bd91, torso: 0xfacc15, arms: 0xfacc15, legs: 0x1e40af, feet: 0x292524, hair: 0x171717, beard: null, boxes: [['head', 0, .68, 0, .72, .14, .72, 0x171717], ['head', 0, .57, .32, .68, .08, .06, 0x111827], ['torso', 0, .45, .25, .24, .22, .04, 0x16a34a]] }, 'rare');
+bundle('b_jarjit', 'Bundle Jarjit', { skin: 0xf0bd91, torso: 0xdc2626, arms: 0xdc2626, legs: 0x1e3a8a, feet: 0x292524, hair: 0x171717, beard: null, boxes: [['head', 0, .68, 0, .74, .14, .74, 0x2563eb], ['head', 0, .3, .34, .54, .2, .06, 0x2563eb], ['head', -.36, .55, 0, .12, .18, .12, 0x2563eb], ['head', .36, .55, 0, .12, .18, .12, 0x2563eb], ['torso', 0, .45, .25, .18, .3, .04, 0xfacc15]] }, 'mythical', { type: 'scan', chance: 0.12, cooldown: 9 });
 
 // ---- Skin senjata: biasa, dan Evo (level 1-7)
 export const SKINS = {};
@@ -139,6 +147,7 @@ export const BANNERS = {
   shinobi: { name: 'Shinobi Gacha', desc: 'Bayangan, rubah, dan malam', color: '#a855f7', bundles: ['b_shinobi', 'b_kitsune'], evo: ['e_mp_kobra'], skins: ['s_deagle_malam', 's_ak_loreng'], items: ['acc_mask', 'trail_cyan', 'pants_royal'] },
   aura: { name: 'Aura Gacha', desc: 'Petarung dengan energi menyala', color: '#2dd4bf', bundles: ['b_aura', 'b_pendekar'], evo: ['e_m4_aura'], skins: ['s_m1014_toxic', 's_mp_permen'], items: ['acc_visor', 'trail_gold', 'shoes_neon'] },
   balok: { name: 'Mainan Gacha', desc: 'Karakter balok klasik yang kocak', color: '#f97316', bundles: ['b_mainan', 'b_robot'], evo: ['e_shot_lahar'], skins: ['s_mp_permen', 's_m4_salju'], items: ['hat_helm_viking', 'bag_cyber', 'acc_headphone'] },
+  kampung: { name: 'Kampung Durian Runtuh Gacha', desc: 'Karakter Kampung Durian Runtuh dengan efek pasif Mythical', color: '#f59e0b', bundles: ['b_upin', 'b_ipin', 'b_ehsan', 'b_fizi', 'b_mail', 'b_jarjit'], evo: [], skins: ['s_mp_permen', 's_m500_emas'], items: ['hat_cap_red', 'acc_glasses', 'shoes_sneaker'] },
 };
 // Peluang per spin (total 100)
 export const RATES = [['bundle', 2], ['evo', 2], ['skin', 10], ['item', 22], ['token', 24], ['coin', 40]];

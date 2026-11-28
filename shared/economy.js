@@ -25,6 +25,9 @@ export function newProfile(name, now) {
     v: 1, name: cleanName(name), coin: STARTER.coin, iron: STARTER.iron, tokens: 0, exp: 0, rank: 0,
     stats: { matches: 0, wins: 0, kills: 0, assists: 0, damage: 0 },
     owned: {}, equipped: {}, weaponSkins: {}, evo: {}, pity: {},
+    matchHistory: [], pets: { owned: ['cat'], equipped: 'cat' }, guild: null, blockyPass: { xp: 0, claimed: [] },
+    emoteCollection: ['wave', 'laugh', 'sit'], characterPresets: [{ name: 'Preset 1', char: 'c_adam', pet: 'cat' }, { name: 'Preset 2', char: 'c_adam', pet: 'cat' }, { name: 'Preset 3', char: 'c_adam', pet: 'cat' }], activePreset: 0,
+    hudLayout: { scale: 100, opacity: 100 },
     daily: '', lastMatchAt: 0, createdAt: now, lastLogin: now,
   };
 }
@@ -181,8 +184,34 @@ export function applyAction(profile, action, { now = Date.now(), rng = Math.rand
       const c = CHARACTERS[action.id];
       if (!c) fail('Karakter tidak ada');
       if (c.price > 0 && !p.owned[action.id]) fail('Karakter belum dimiliki');
-      p.char = action.id; break;
+      p.char = action.id; p.characterPresets ||= [{ name: 'Preset 1', char: 'c_adam', pet: 'cat' }, { name: 'Preset 2', char: 'c_adam', pet: 'cat' }, { name: 'Preset 3', char: 'c_adam', pet: 'cat' }]; p.characterPresets[p.activePreset || 0].char = action.id; break;
     }
+    case 'setPet': {
+      const pets = ['cat','eagle','tiger','orangutan','dog','fox','panda'];
+      p.pets ||= { owned: ['cat'], equipped: 'cat' };
+      if (!pets.includes(action.id) || !p.pets.owned.includes(action.id)) fail('Pet belum dimiliki');
+      p.pets.equipped = action.id; if (p.characterPresets?.[p.activePreset || 0]) p.characterPresets[p.activePreset || 0].pet = action.id; break;
+    }
+    case 'setPreset': {
+      const i = int(action.index, 0, 2); p.characterPresets ||= [{ name: 'Preset 1', char: 'c_adam', pet: 'cat' }, { name: 'Preset 2', char: 'c_adam', pet: 'cat' }, { name: 'Preset 3', char: 'c_adam', pet: 'cat' }];
+      const preset = p.characterPresets[i]; if (!preset) fail('Preset tidak ditemukan');
+      if (action.char) { const c = CHARACTERS[action.char]; if (!c || (c.price > 0 && !p.owned[action.char])) fail('Karakter belum dimiliki'); preset.char = action.char; }
+      if (action.pet) { if (!p.pets?.owned?.includes(action.pet)) fail('Pet belum dimiliki'); preset.pet = action.pet; }
+      p.activePreset = i; p.char = preset.char; p.pets ||= { owned: ['cat'], equipped: 'cat' }; p.pets.equipped = preset.pet || 'cat'; break;
+    }
+    case 'claimPass': {
+      const tier = int(action.tier, 1, 30); p.blockyPass ||= { xp: 0, claimed: [] };
+      if ((p.blockyPass.xp || 0) < tier * 100) fail('Level Blocky Pass belum tercapai');
+      if (p.blockyPass.claimed.includes(tier)) fail('Hadiah sudah diklaim');
+      p.blockyPass.claimed.push(tier); p.coin += 100 + tier * 15; p.iron += 100 + tier * 20; result = { tier }; break;
+    }
+    case 'createGuild': {
+      const name = String(action.name || '').trim().replace(/[^\p{L}\p{N} _-]/gu, '').slice(0, 18);
+      if (name.length < 3) fail('Nama guild minimal 3 karakter'); if (p.guild) fail('Kamu sudah tergabung dalam guild');
+      p.guild = { name, tag: name.replace(/[^A-Za-z0-9]/g, '').slice(0, 4).toUpperCase() || 'BR', role: 'Leader', members: [p.name], level: 1, exp: 0 }; break;
+    }
+    case 'leaveGuild': p.guild = null; break;
+    case 'setHud': p.hudLayout = { scale: int(action.scale, 70, 130), opacity: int(action.opacity, 30, 100) }; break;
     case 'mysteryBuy': case 'mysteryClaim': {
       if (!event || event.endsAt <= now || event.startsAt > now) fail('Mystery Shop sedang tidak aktif');
       if (p.mystery?.ev !== event.id) p.mystery = { ev: event.id, spent: 0, claimed: [] };
@@ -290,6 +319,9 @@ export function applyAction(profile, action, { now = Date.now(), rng = Math.rand
       p.eventProgress.weaponKills = (p.eventProgress.weaponKills || 0) + kills;
       if (!win) p.eventProgress.deaths = (p.eventProgress.deaths || 0) + 1;
       p.stats.matches++; p.stats.wins += win ? 1 : 0; p.stats.kills += kills; p.stats.assists += assists; p.stats.damage += damage;
+      p.matchHistory ||= []; p.matchHistory.unshift({ mode: mode.name, map: action.map || 'Random', kills, assists, damage, survival, placement, total: mode.total, win, at: now, exp }); p.matchHistory = p.matchHistory.slice(0, 30);
+      p.blockyPass ||= { xp: 0, claimed: [] }; p.blockyPass.xp = (p.blockyPass.xp || 0) + exp;
+      if (p.guild) { p.guild.exp = (p.guild.exp || 0) + exp; p.guild.level = Math.max(1, Math.floor(p.guild.exp / 1000) + 1); }
       result = { exp, base, coin, kills, assists, damage, placement, survival, win, rankBefore: before, rankAfter: p.rank };
       break;
     }

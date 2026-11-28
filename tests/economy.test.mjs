@@ -120,3 +120,27 @@ test('event kill dan bundle punya progress dan hadiah otoritatif', () => {
   assert.equal(p.coin, 1865);
   assert.throws(() => run(p, { type: 'claimEvent', id: 'weapon5' }));
 });
+
+test('pet, guild, preset, HUD, dan Blocky Pass tersimpan di profil', () => {
+  let p = base();
+  p = run(p, { type: 'setPet', id: 'cat' }).profile;
+  assert.equal(p.pets.equipped, 'cat');
+  p = run(p, { type: 'createGuild', name: 'Blocky Squad' }).profile;
+  assert.equal(p.guild.name, 'Blocky Squad');
+  p = run(p, { type: 'setPreset', index: 1, char: 'c_adam', pet: 'cat' }).profile;
+  assert.equal(p.activePreset, 1);
+  assert.equal(p.characterPresets[1].char, 'c_adam');
+  p = run(p, { type: 'setHud', scale: 120, opacity: 75 }).profile;
+  assert.deepEqual(p.hudLayout, { scale: 120, opacity: 75 });
+  p.blockyPass.xp = 100;
+  p = run(p, { type: 'claimPass', tier: 1 }).profile;
+  assert.ok(p.blockyPass.claimed.includes(1));
+  assert.throws(() => run(p, { type: 'claimPass', tier: 1 }));
+});
+
+test('match menyimpan riwayat dan menambah EXP Blocky Pass', () => {
+  const r = run(base(), { type: 'match', mode: 'br', kills: 2, placement: 1, map: 'Andromeda' });
+  assert.equal(r.profile.matchHistory.length, 1);
+  assert.equal(r.profile.matchHistory[0].map, 'Andromeda');
+  assert.equal(r.profile.blockyPass.xp, r.result.exp);
+});

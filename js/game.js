@@ -1,6 +1,6 @@
 // Gameplay Battle Royale: pesawat, parasut, looting, tembak-menembak, bot, zona, dan HUD.
 import * as THREE from 'three';
-import { WEAPONS, AMMO, ARMOR, SKINS, CHARACTERS, MEDS, GLOO_SKINS } from '../shared/catalog.js';
+import { ITEMS, WEAPONS, AMMO, ARMOR, SKINS, CHARACTERS, MEDS, GLOO_SKINS } from '../shared/catalog.js';
 import { createCharacter, createGun, createChute, box } from './character.js';
 import { generateWorld, buildWorldMesh, moveBody, blocked, floorAt, rayBox, rayWorld, seeded, vehicleSolid, HALF } from './world.js';
 import { settings } from './settings.js';
@@ -24,6 +24,9 @@ let renderer;
 
 export function startGame(match, profile, onEnd) {
   const { mode, net } = match;
+  const hudLayout = profile.hudLayout || { scale: 100, opacity: 100 };
+  $('#hud').style.setProperty('--hud-scale', hudLayout.scale / 100);
+  $('#hud').style.setProperty('--hud-opacity', hudLayout.opacity / 100);
   const training = mode === 'training';
   const social = mode === 'social';
   const canvas = $('#view');
@@ -81,7 +84,7 @@ export function startGame(match, profile, onEnd) {
     const ch = createCharacter(info.equipped);
     scene.add(ch.root);
     const a = {
-      id: info.id, name: info.name, rank: info.rank, squad: info.squad || null, isBot: !!info.bot, isMe: !!info.me, skins: info.weaponSkins || {}, evo: info.evo || {},
+      id: info.id, name: info.name, rank: info.rank, squad: info.squad || null, isBot: !!info.bot, isMe: !!info.me, skins: info.weaponSkins || {}, evo: info.evo || {}, bundleId: info.equipped?.bundle || null, passive: ITEMS[info.equipped?.bundle]?.skill || null, passiveAt: -99, launchAt: -99,
       ch, x: 0, y: 0, z: 0, vy: 0, yaw: 0, hp: 100, mana: 100, armor: { h: 0, v: 0 }, weapons: [null, null], slot: 2,
       alive: true, stance: 'stand', phase: 'plane', speed: 0, dmgBy: new Map(), lastHurt: -99, grounded: false, chute: null, punch: 0, seen: false,
       jumpAt: 2.5 + rng() * (PLANE_TIME - 4), brain: { think: rng(), target: null, since: 0, dir: rng() * 6.28, cool: 1, stuck: 0, goal: null, landed: 0 },
@@ -246,6 +249,27 @@ export function startGame(match, profile, onEnd) {
     return { t, target };
   }
 
+  function passiveHit(from, target) {
+    const skill = from?.passive;
+    if (!skill || clock - from.passiveAt < skill.cooldown || !target?.alive) return;
+    if (Math.random() >= skill.chance) return;
+    from.passiveAt = clock;
+    if (skill.type === 'sandal') {
+      const dx = target.x - from.x, dz = target.z - from.z, length = Math.hypot(dx, dz) || 1;
+      const nx = target.x + dx / length * 2.8, nz = target.z + dz / length * 2.8;
+      if (!blocked(world, nx, target.y, nz, 0.45)) { target.x = nx; target.z = nz; }
+      burst(V(target.x, target.y + 1.1, target.z), 0xb87938, 12, 0.16, 4);
+      burst(V(target.x, target.y + 1.1, target.z), 0xf5d7a1, 5, 0.12, 3);
+      feed('SENDAL JEPIT!');
+    } else if (skill.type === 'chicken') {
+      target.launchAt = clock;
+      target.launchUntil = clock + 2;
+      burst(V(target.x, target.y + 1.3, target.z), 0xf59e0b, 16, 0.18, 4);
+      burst(V(target.x, target.y + 1.6, target.z), 0xfde68a, 8, 0.14, 3);
+      feed('AYAM GORENG!');
+    }
+  }
+
   function damage(target, amount, from, head) {
     if (!target.alive || ended) return;
     if ((training || social) && target.isMe) return;
@@ -255,7 +279,7 @@ export function startGame(match, profile, onEnd) {
     if (from?.isMe) { stats.damage += real; hitMark(); }
     if (!owns(target)) { net?.event({ k: 'hit', to: target.id, from: from?.id || '', d: amount, h: head ? 1 : 0 }); return; }
     target.hp -= real; target.lastHurt = clock;
-    if (from) { target.dmgBy.set(from.id, clock); if (target.isBot) { target.brain.target = from; target.brain.since = clock - 0.4; } }
+    if (from) { target.dmgBy.set(from.id, clock); if (target.isBot) { target.brain.target = from; target.brain.since = clock - 0.4; } passiveHit(from, target); }
     if (target.isMe) { flash = 0.8; sfx.hurt(); }
     if (target.hp <= 0.01) die(target, from);
   }
@@ -304,7 +328,7 @@ export function startGame(match, profile, onEnd) {
     if (ended) return;
     ended = true;
     const placement = win ? 1 : Math.min(match.total, alive().filter((a) => !a.isMe).length + 1);
-    const result = { mode, total: match.total, kills: stats.kills, assists: stats.assists, damage: Math.round(stats.damage), survival: Math.round(clock), placement, win };
+    const result = { mode, map: match.map || 'Random', total: match.total, kills: stats.kills, assists: stats.assists, damage: Math.round(stats.damage), survival: Math.round(clock), placement, win };
     const text = $('#prompt'); text.textContent = training || social ? '' : win ? 'BOOYAH! Kamu yang terakhir bertahan' : 'Kamu gugur';
     setTimeout(() => { cleanup(); onEnd(result); }, training || social ? 100 : 1800);
   }
@@ -514,6 +538,9 @@ export function startGame(match, profile, onEnd) {
   tap('#bBag', () => toggleInventory()); tap('#bReload', reload); tap('#bDash', useDash); tap('#bHeal', useHeal);
   tap('#bSkill', useSkill); tap('#bScope', cycleScope); tap('#bCar', toggleCar); tap('#bEmote', cycleEmote); tap('#bChat', () => openModal('chat'));
   tap('#bPickup', () => pickable && pickup(pickable));
+  tap('#bMiniGames', () => { $('#socialMinigames').hidden = false; $('#socialGameStatus').textContent = 'Pilih permainan untuk memulai tantangan.'; });
+  on($('#socialGamesClose'), 'click', () => { $('#socialMinigames').hidden = true; });
+  on($('#socialMinigames'), 'click', e => { const b=e.target.closest('[data-minigame]'); if(!b)return; const games={parkour:'Parkour Run dimulai. Capai titik akhir di pulau.',coin:'Coin Dash dimulai. Jelajahi pulau dan kumpulkan item coin.',memory:'Memory Blocks dimulai. Ikuti pola blok yang muncul.'}; $('#socialGameStatus').textContent=games[b.dataset.minigame] || 'Tantangan dimulai.'; });
   tap('#bTrainingPortal', () => {
     if (!training) return;
     const inRange = me.x > 15;
@@ -731,7 +758,8 @@ export function startGame(match, profile, onEnd) {
     }
     const prepHidden = training && me.x < 15 && a !== me;
     a.ch.root.visible = !prepHidden && a.phase !== 'plane' && a.phase !== 'car' && (a.alive || clock - a.diedAt < 5);
-    a.ch.root.position.set(a.x, a.y, a.z); a.ch.root.rotation.y = a.yaw;
+    const lift = a.launchUntil > clock ? Math.sin(Math.max(0, (clock - a.launchAt) / 2) * Math.PI) * 3.2 : 0;
+    a.ch.root.position.set(a.x, a.y + lift, a.z); a.ch.root.rotation.y = a.yaw;
     const w = current(a).key, skin = a.skins[w];
     a.ch.setWeapon(w, skin, a.evo[skin] || 1); a.ch.setArmor(a.armor.h, a.armor.v);
     a.punch = Math.max(0, a.punch - dt * 3.5);
@@ -781,9 +809,10 @@ export function startGame(match, profile, onEnd) {
     }
     for (const [id, m] of markers) {
       const age = clock - m.t;
-      if (age > 2.5 || !actors.get(id)?.alive) { markers.delete(id); continue; }
+      const duration = m.duration || 2.5;
+      if (age > duration || !actors.get(id)?.alive) { markers.delete(id); continue; }
       const [px, py] = toMap(m.x, m.z);
-      g.globalAlpha = 1 - age / 3; g.fillStyle = '#ff2d2d'; g.strokeStyle = '#fff'; g.lineWidth = 1.5;
+      g.globalAlpha = 1 - age / duration; g.fillStyle = m.scan ? '#38bdf8' : '#ff2d2d'; g.strokeStyle = '#fff'; g.lineWidth = 1.5;
       g.beginPath(); g.moveTo(px, py + 6); g.lineTo(px - 6, py - 5); g.lineTo(px, py - 2); g.lineTo(px + 6, py - 5); g.closePath(); g.fill(); g.stroke(); g.globalAlpha = 1;
     }
     const p = me.phase === 'plane' ? planePos() : me;
@@ -811,7 +840,7 @@ export function startGame(match, profile, onEnd) {
     $('#bSkill').hidden = !chr.skill || social; $('#bSkill small').textContent = skillCd > 0 ? `${Math.ceil(skillCd)}s` : (chr.skillName || '');
     $('#bCar').hidden = !(nearV || me.phase === 'car'); $('#bCar small').textContent = me.phase === 'car' ? 'Turun' : 'Naik';
     $('#scopeOv').hidden = !scopeLv; $('#scopeOv').textContent = `x${scopeLv + 1}`; $('#bScope small').textContent = scopeLv ? `x${scopeLv + 1}` : 'Scope';
-    $('#bEmote').hidden = !social; $('#bChat').hidden = !social; $('#bHeal small').textContent = `${meds.medkit}/${meds.super}`;
+    $('#bEmote').hidden = !social; $('#bChat').hidden = !social; $('#bMiniGames').hidden = !social; $('#bHeal small').textContent = `${meds.medkit}/${meds.super}`;
     $('#manaFill').style.width = `${me.mana}%`; $('#manaText').textContent = `MANA ${Math.floor(me.mana)}`;
     const w = current(me), spec = WEAPONS[w.key];
     $('#ammoText').textContent = reloading ? `Reload ${reloading.toFixed(1)}s` : spec.ammo ? `${w.mag} / ${ammo[spec.ammo]}  ${AMMO[spec.ammo].name}` : 'Tinju';
@@ -858,6 +887,14 @@ export function startGame(match, profile, onEnd) {
       }
       if (mode === 'br' && clock >= PLANE_TIME - 1 && me.phase === 'plane') leavePlane(me);
       stepPlayer(dt); updateExtras(dt);
+      if (me.passive?.type === 'scan' && clock - me.passiveAt >= me.passive.cooldown && Math.random() < dt * me.passive.chance) {
+        me.passiveAt = clock;
+        for (const enemy of actors.values()) {
+          if (enemy === me || !enemy.alive || enemy.phase !== 'ground' || (me.squad && enemy.squad === me.squad)) continue;
+          if (dist2(enemy, me) <= 32) markers.set(enemy.id, { x: enemy.x, z: enemy.z, t: clock, duration: 4.5, scan: true });
+        }
+        feed('TOPENG JARJIT AKTIF');
+      }
       for (const a of actors.values()) if (a.isBot && a.alive && owns(a)) stepBot(a, dt);
       if (input.fire || input.keys.has('KeyJ')) tryFire();
       // Regenerasi & zona

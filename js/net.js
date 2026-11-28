@@ -3,7 +3,7 @@
 import { fb } from './firebase.js';
 import { store } from './store.js';
 import { seeded } from './world.js';
-import { MODES, ITEMS, BANNERS } from '../shared/catalog.js';
+import { MODES, ITEMS, BANNERS, MAPS } from '../shared/catalog.js';
 
 const WAIT = 12000;
 const NAMES = ['Budi', 'Sari', 'Agus', 'Dewi', 'Joko', 'Putri', 'Rizky', 'Ayu', 'Bayu', 'Nadia', 'Fajar', 'Intan', 'Galih', 'Wulan', 'Dimas', 'Tari', 'Raka', 'Sinta', 'Bagas', 'Mega'];
@@ -73,6 +73,7 @@ async function onlineMatch(mode, profile, signal, map) {
     return { room: fresh, createdAt: t, seed, players: { [uid]: true } };
   }, { applyLocally: false }), timeout]);
   const q = tx.snapshot.val();
+  const selectedMap = MAPS[Math.abs(q.seed) % MAPS.length].id;
   const base = `rooms/${q.room}`;
   const ref = (p) => db.ref(rtdb, `${base}/${p}`);
   const mine = [ref(`players/${uid}`), ref(`state/${uid}`)];
@@ -92,7 +93,7 @@ async function onlineMatch(mode, profile, signal, map) {
     await sleep(Math.max(0, q.createdAt + WAIT - now()), signal);
     const players = (await db.get(ref('players'))).val() || {};
     const ids = Object.keys(players).sort();
-    if (ids.length < 2 || !players[uid]) { await leave(); return offlineMatch(mode, profile, q.seed, map); }
+    if (ids.length < 2 || !players[uid]) { await leave(); return offlineMatch(mode, profile, q.seed, selectedMap); }
     const humans = ids.map((id) => {
       const p = players[id];
       let look = [{}, {}, {}];
@@ -120,7 +121,7 @@ async function onlineMatch(mode, profile, signal, map) {
       onDrop: (fn) => listen('drops', (v) => fn(v)),
       leave,
     };
-    return { mode, map, seed: q.seed ^ map.split('').reduce((a,c)=>a+c.charCodeAt(0),0), total, net, startAt: q.createdAt + WAIT + 2500, now, roster: [...humans, ...makeBots(q.seed, total - humans.length, profile.rank)] };
+    return { mode, map: selectedMap, seed: q.seed ^ selectedMap.split('').reduce((a,c)=>a+c.charCodeAt(0),0), total, net, startAt: q.createdAt + WAIT + 2500, now, roster: [...humans, ...makeBots(q.seed, total - humans.length, profile.rank)] };
   } catch (e) { await leave(); throw e; }
 }
 

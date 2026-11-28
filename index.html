@@ -49,7 +49,14 @@
       <button data-open="shop"><span data-icon="shop"></span>Shop</button>
       <button data-open="spin"><span data-icon="spin"></span>Spin</button>
       <button data-open="weapon"><span data-icon="weapon"></span>Weapon</button>
-      <button data-open="chars"><span data-icon="bag"></span>Karakter</button>
+      <button data-open="chars"><span data-icon="user"></span>Karakter</button>
+      <button data-open="pets"><span data-icon="paw-print"></span>Pet</button>
+      <button data-open="guild"><span data-icon="users"></span>Guild</button>
+      <button data-open="pass"><span data-icon="award"></span>Blocky Pass</button>
+      <button data-open="history"><span data-icon="history"></span>Riwayat</button>
+      <button data-open="emotes"><span data-icon="smile"></span>Emote</button>
+      <button data-open="achievements"><span data-icon="medal"></span>Achievement</button>
+      <button data-open="hud"><span data-icon="sliders-horizontal"></span>HUD</button>
       <button data-open="mystery"><span data-icon="gift"></span>Mystery</button>
       <button data-open="newbie"><span data-icon="calendar"></span>Newbie Daily</button>
       <button data-open="events"><span data-icon="trophy"></span>Events</button>
@@ -71,19 +78,20 @@
     <div class="turns"><button id="turnL" class="iconbtn" data-icon="left" aria-label="Putar kiri"></button><button id="turnR" class="iconbtn" data-icon="right" aria-label="Putar kanan"></button></div>
     <button id="friendQuick" class="friendquick"><span data-icon="users"></span><small>Friends</small></button>
     <div class="playdock">
-      <div class="mode"><button id="modePrev" class="iconbtn" data-icon="left" aria-label="Mode sebelumnya"></button><div id="modeList"></div><button id="modeNext" class="iconbtn" data-icon="right" aria-label="Mode berikutnya"></button></div>
+      <div class="mode"><button id="modePicker" class="mode-current"><span id="modeName">BATTLE ROYALE</span><span data-icon="chevron-down"></span></button></div>
       <small id="modeDesc"></small>
-      <label class="mapselect">MAP <select id="mapSelect"><option value="andromeda">Andromeda</option><option value="zipper">Zipper</option><option value="tel_mista">Tel Mista</option><option value="oslo">Oslo</option><option value="ngawi">Ngawi</option><option value="jomokerto">Jomokerto</option></select></label>
       <button id="playBtn" class="play"><span data-icon="play"></span> PLAY MATCHMAKING</button>
     </div>
   </main>
+
+  <div id="modeModal" class="overlay" hidden><div class="window mode-window"><header><h2>PILIH MODE</h2><button id="modeClose" class="iconbtn" data-icon="x"></button></header><div id="modeOptions" class="mode-options"></div></div></div>
 
   <div id="modal" class="overlay" hidden>
     <div class="window"><header><h2 id="modalTitle"></h2><button id="modalClose" class="iconbtn" data-icon="x" aria-label="Tutup"></button></header><div id="modalBody"></div></div>
   </div>
 
   <div id="matchmaking" class="overlay" hidden>
-    <div class="panel center"><div class="spinner"></div><h2 id="mmStatus"></h2><p id="mmTimer"></p><div id="mmFound"></div><button id="mmCancel" class="btn ghost">Cancel</button></div>
+    <div class="panel center"><div class="spinner"></div><h2 id="mmStatus"></h2><p id="mmTimer"></p><div id="mmFound"></div><div id="mapRoulette" class="map-roulette" hidden><div class="map-preview" id="mapPreview"></div><div><small>MAP TERPILIH</small><h3 id="mapRouletteName"></h3></div></div><button id="mmCancel" class="btn ghost">Cancel</button></div>
   </div>
 
   <section id="game" class="screen" hidden>
@@ -121,6 +129,7 @@
         <button id="bCar" class="hbtn txt" hidden><small>Naik</small></button>
         <button id="bEmote" class="hbtn txt" hidden><small>Emote</small></button>
         <button id="bChat" class="hbtn txt" hidden><small>Chat</small></button>
+        <button id="bMiniGames" class="hbtn txt" hidden><small>Mini Games</small></button>
         <button id="bHeal" class="hbtn" aria-label="Pulihkan"><span data-icon="heal"></span><small>Heal</small></button>
       </div>
       <button id="bTrainingPortal" class="hbtn txt" hidden>Masuk Range</button>
@@ -130,6 +139,7 @@
     </div>
   </section>
 
+  <div id="socialMinigames" class="overlay" hidden><div class="window"><header><h2>SOCIAL ISLAND GAMES</h2><button id="socialGamesClose" class="iconbtn" data-icon="x"></button></header><div class="social-games"><button data-minigame="parkour"><b>PARKOUR RUN</b><small>Lewati lintasan dan capai garis akhir.</small></button><button data-minigame="coin"><b>COIN DASH</b><small>Kumpulkan coin sebanyak mungkin.</small></button><button data-minigame="memory"><b>MEMORY BLOCKS</b><small>Uji ingatan dengan pola blok.</small></button></div><p id="socialGameStatus" class="note">Pilih permainan untuk memulai tantangan.</p></div></div>
   <div id="results" class="overlay" hidden></div>
   <div id="rankup" class="overlay" hidden></div>
   <div id="rotate"><div data-icon="phone"></div><p>Putar perangkat ke mode landscape</p></div>

@@ -1,4 +1,4 @@
-import { SKINS, EVO_MAX } from '../shared/catalog.js';
+import { SKINS, EVO_MAX, MAPS } from '../shared/catalog.js';
 // Titik masuk: login guest, lobby, matchmaking, lalu game.
 import { store, loadProfile, createGuest, authenticate, onProfile, act } from './store.js';
 import { startWar } from './war.js';
@@ -60,20 +60,21 @@ async function play(mode) {
   if (!store.online && !quick(mode)) toast('Koneksi terputus, mode offline');
   try {
     const party = getActiveParty();
-    const mapId = mode === 'training' ? 'training-ground' : mode === 'social' ? 'social-island' : (party?.matchRequest?.status === 'launching' ? party.matchRequest.map : ($('#mapSelect')?.value || 'andromeda'));
+    const mapId = mode === 'training' ? 'training-ground' : mode === 'social' ? 'social-island' : party?.matchRequest?.status === 'launching' && MAPS.some(m => m.id === party.matchRequest.map) ? party.matchRequest.map : MAPS[Math.floor(Math.random() * MAPS.length)].id;
     const match = await findMatch(mode, store.profile, abort.signal, mapId, party?.matchRequest?.status === 'launching' ? party : null);
     clearInterval(tick);
     status.textContent = quick(mode) ? 'Siap!' : 'Match Found!'; box.classList.add('done');
+    if (!quick(mode)) { const selected = MAPS.find(m => m.id === match.map) || MAPS[0]; const roulette=$('#mapRoulette'); roulette.hidden=false; $('#mapRouletteName').textContent=selected.name; $('#mapPreview').className='map-preview map-'+selected.id; $('#mapPreview').innerHTML='<span></span>'; }
     found.innerHTML = match.roster.filter((r) => !r.me).slice(0, 11).map((r) => `<div>${rankBadge(r.rank, 'sm')} ${esc(r.name)}${r.bot ? ' <small>BOT</small>' : ''}</div>`).join('');
     await new Promise((res, rej) => {
       const t = setTimeout(res, quick(mode) ? 500 : 2200);
       abort.signal.addEventListener('abort', () => { clearTimeout(t); rej(new DOMException('', 'AbortError')); });
       if (abort.signal.aborted) rej(new DOMException('', 'AbortError'));
     }).catch((e) => { match.net?.leave(); throw e; });
-    box.hidden = true; show('game'); stage.setActive(false);
+    box.hidden = true; $('#mapRoulette').hidden=true; show('game'); stage.setActive(false);
     startGame(match, store.profile, finish);
   } catch (e) {
-    box.hidden = true;
+    box.hidden = true; $('#mapRoulette').hidden=true;
     if (e.name !== 'AbortError') { console.error(e); toast('Gagal memulai match'); enterLobby(); }
   } finally { clearInterval(tick); searching = false; }
 }
@@ -85,9 +86,9 @@ async function finish(result) {
     // Server menolak hasil yang datang < 20 detik setelah match sebelumnya
     const wait = Math.min(20500, 20500 - (Date.now() - (store.profile.lastMatchAt || 0)));
     if (wait > 0) await new Promise((r) => setTimeout(r, wait));
-    try { rewarded = await act({ type: 'match', ...result }); }
+    try { rewarded = await act({ type: 'match', ...result, map: result.map || 'Random' }); }
     catch (e) {
-      try { if (!store.online) rewarded = await act({ type: 'match', ...result }); else result.error = e.message; }
+      try { if (!store.online) rewarded = await act({ type: 'match', ...result, map: result.map || 'Random' }); else result.error = e.message; }
       catch (e2) { result.error = e2.message; }
     }
   }

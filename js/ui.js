@@ -1,5 +1,5 @@
 // Lobby, modal, hasil match, dan animasi Rank Up.
-import { ITEMS, SKINS, WEAPONS, AMMO, RANKS, BANNERS, RATES, PITY, SPIN_COST, EVO_MAX, EVO_COST, EVO_PERKS, SLOT_GROUPS, MODES, MYSTERY_ITEMS, MYSTERY_MILESTONES, CHARACTERS, GLOO_SKINS, AVATARS } from '../shared/catalog.js';
+import { ITEMS, SKINS, WEAPONS, AMMO, RANKS, BANNERS, RATES, PITY, SPIN_COST, EVO_MAX, EVO_COST, EVO_PERKS, SLOT_GROUPS, MODES, MYSTERY_ITEMS, MYSTERY_MILESTONES, CHARACTERS, GLOO_SKINS, AVATARS, MAPS } from '../shared/catalog.js';
 import { DAILY_IRON, dayKey } from '../shared/economy.js';
 import { store, act, logout } from './store.js';
 import { fb } from './firebase.js';
@@ -8,6 +8,8 @@ import { settings, saveSettings } from './settings.js';
 import { sfx } from './audio.js';
 import { icon } from './icons.js';
 import { thumb } from './preview.js';
+import * as THREE from 'three';
+import { createCharacter } from './character.js';
 
 export const $ = (s, el = document) => el.querySelector(s);
 export const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
@@ -44,18 +46,20 @@ export function renderProfile(p) {
 }
 
 // ---------- Modal ----------
-let openModalName = null, cleanup = null, busy = false;
-const view = { vault: 'bundle', shop: 'hat', spin: 'superior', last: null };
-const TITLES = { vault: 'Vault', shop: 'Shop', spin: 'Spin', chat: 'Global Chat', weapon: 'Weapon', board: 'Leaderboard', settings: 'Settings', admin: 'Panel Admin', mystery: 'Mystery Shop', chars: 'Karakter', daily: 'Hadiah Harian', newbie: 'Newbie Daily', events: 'Events', avatars: 'Avatar Profile', gloo: 'Gloo Wall', friends: 'Friends' };
+let openModalName = null, cleanup = null, previewCleanup = null, busy = false;
+const view = { vault: 'bundle', shop: 'hat', spin: 'superior', last: null, char: 'c_adam', charPage: 'collection' };
+const TITLES = { pets: 'Pet Collection', guild: 'Guild', pass: 'Blocky Pass', history: 'Match History', emotes: 'Emote Collection', achievements: 'Achievement', hud: 'HUD Customization', vault: 'Vault', shop: 'Shop', spin: 'Spin', chat: 'Global Chat', weapon: 'Weapon', board: 'Leaderboard', settings: 'Settings', admin: 'Panel Admin', mystery: 'Mystery Shop', chars: 'Character Preset', daily: 'Hadiah Harian', newbie: 'Newbie Daily', events: 'Events', avatars: 'Avatar Profile', gloo: 'Gloo Wall', friends: 'Friends' };
 
 export function openModal(name) {
   closeModal(); openModalName = name;
+  if (name === 'chars') view.charPage = 'presets';
   $('#modal').hidden = false; $('#modalTitle').textContent = TITLES[name];
   renderModal();
 }
-export function closeModal() { cleanup?.(); cleanup = null; openModalName = null; $('#modal').hidden = true; $('#modalBody').innerHTML = ''; }
+export function closeModal() { cleanup?.(); cleanup = null; previewCleanup?.(); previewCleanup = null; openModalName = null; $('#modal').hidden = true; $('#modalBody').innerHTML = ''; }
 
 function renderModal() {
+  previewCleanup?.(); previewCleanup = null;
   const body = $('#modalBody');
   const scroll = [...body.querySelectorAll('.scroll')].map((e) => e.scrollTop);
   VIEWS[openModalName](body, store.profile);
@@ -75,6 +79,25 @@ async function run(action, ok) {
 }
 
 const card = (id, rarity, name, footer) => `<article class="card ${rarity}"><img src="${thumb(id)}" alt=""><h4>${esc(name)}</h4>${footer}</article>`;
+
+function mountCharacterPreview(canvas, profile, characterId) {
+  if (!canvas) return;
+  let renderer;
+  try { renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true }); } catch { return; }
+  const scene = new THREE.Scene();
+  scene.add(new THREE.HemisphereLight(0xffffff, 0x34344d, 2));
+  const light = new THREE.DirectionalLight(0xffffff, 2); light.position.set(3, 5, 4); scene.add(light);
+  const camera = new THREE.PerspectiveCamera(32, 1, 0.1, 30); camera.position.set(0, 1.35, 5.2); camera.lookAt(0, 1.05, 0);
+  const avatar = createCharacter(profile.equipped || {}); scene.add(avatar.root); avatar.animate(0, 'idle');
+  const platform = new THREE.Mesh(new THREE.CylinderGeometry(1.05, 1.05, 0.12, 6), new THREE.MeshStandardMaterial({color:0x25253a,metalness:.35,roughness:.55})); platform.position.y=-.08; scene.add(platform);
+  const ring = new THREE.Mesh(new THREE.TorusGeometry(1.05,.025,8,48),new THREE.MeshBasicMaterial({color:0xfbbf24})); ring.rotation.x=Math.PI/2; ring.position.y=-.005; scene.add(ring);
+  let active=true, angle=.35, drag=null, last=0, raf=0;
+  const resize=()=>{const w=Math.max(1,canvas.clientWidth),h=Math.max(1,canvas.clientHeight);renderer.setPixelRatio(Math.min(2,window.devicePixelRatio||1));renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix()};
+  const down=e=>{drag=e.clientX;canvas.setPointerCapture?.(e.pointerId)}; const move=e=>{if(drag!==null){angle+=(e.clientX-drag)*.012;drag=e.clientX}}; const up=()=>{drag=null};
+  canvas.addEventListener('pointerdown',down);canvas.addEventListener('pointermove',move);canvas.addEventListener('pointerup',up);canvas.addEventListener('pointercancel',up);window.addEventListener('resize',resize);resize();
+  const frame=t=>{if(!active)return;raf=requestAnimationFrame(frame);avatar.root.rotation.y=angle;avatar.animate(t/1000,'idle');renderer.render(scene,camera)};raf=requestAnimationFrame(frame);
+  previewCleanup=()=>{active=false;cancelAnimationFrame(raf);window.removeEventListener('resize',resize);canvas.removeEventListener('pointerdown',down);canvas.removeEventListener('pointermove',move);canvas.removeEventListener('pointerup',up);canvas.removeEventListener('pointercancel',up);avatar.root.traverse(o=>{o.geometry?.dispose?.();if(o.material&&!Array.isArray(o.material))o.material.dispose?.()});renderer.dispose()};
+}
 
 const VIEWS = {
   vault(body, p) {
@@ -125,7 +148,7 @@ const VIEWS = {
   },
   spin(body, p) {
     const b = BANNERS[view.spin];
-    const prize = (id) => { const x = ITEMS[id] || SKINS[id]; return `<figure class="${x.rarity} ${p.owned[id] ? 'got' : ''}"><img src="${thumb(id)}" alt=""><figcaption>${esc(x.name)}</figcaption></figure>`; };
+    const prize = (id) => { const x = ITEMS[id] || SKINS[id]; const skill = x.skill ? ({ sandal: 'Pasif: Sendal Jepit', chicken: 'Pasif: Ayam Goreng', scan: 'Pasif: Deteksi Musuh' }[x.skill.type]) : ''; return `<figure class="${x.rarity} ${p.owned[id] ? 'got' : ''}" title="${esc(skill || x.name)}"><img src="${thumb(id)}" alt=""><figcaption>${esc(x.name)}${skill ? `<br><small>${esc(skill)}</small>` : ''}</figcaption></figure>`; };
     const reward = (r) => {
       if (r.kind === 'token' || r.kind === 'coin') return `<figure><div class="big" data-icon="${r.kind}"></div><figcaption>${r.amount} ${r.kind === 'token' ? 'Token Evo' : 'Coin'}</figcaption></figure>`;
       const x = ITEMS[r.id] || SKINS[r.id];
@@ -138,7 +161,7 @@ const VIEWS = {
         ${view.last ? `<h5>Hasil spin</h5><div class="prizes result">${view.last.map(reward).join('')}</div>` : ''}
         <div class="spinbtns"><button class="btn" data-spin="1">Spin 1x &middot; ${SPIN_COST[1]} Iron</button><button class="btn gold" data-spin="10">Spin 10x &middot; ${SPIN_COST[10]} Iron</button></div>
         <p class="note">Jaminan Bundle/Evo dalam ${PITY - (p.pity[view.spin] || 0)} spin lagi. Peluang: ${RATES.map(([k, v]) => `${{ bundle: 'Bundle', evo: 'Skin Evo', skin: 'Skin', item: 'Aksesoris', token: 'Token', coin: 'Coin' }[k]} ${v}%`).join(', ')}.</p>
-        <h5>Hadiah utama</h5><div class="prizes">${[...b.bundles, ...b.evo, ...b.skins, ...b.items].map(prize).join('')}</div>
+        <h5>Hadiah utama</h5><div class="prizes">${[...b.bundles, ...b.evo, ...b.skins, ...b.items].map(prize).join('')}</div>${view.spin === 'kampung' ? `<div class="note kampung-skills"><b>Mythical Passive</b><p>Upin: tembakan berpeluang melempar sendal dan memberi knockback.</p><p>Ipin: tembakan berpeluang melontarkan musuh selama 2 detik.</p><p>Jarjit: topeng biru berpeluang menandai musuh di balik dinding pada minimap.</p><p>Ehsan, Fizi, dan Mail: bundle kosmetik biasa tanpa skill.</p></div>` : ''}
       </div></div>`;
     body.onclick = (e) => {
       const d = e.target.closest('button')?.dataset;
@@ -184,7 +207,7 @@ const VIEWS = {
         matchControls = isLeader ? `<p>Menunggu persetujuan anggota: ${Object.values(request.responses || {}).filter(x=>x==='accepted').length}/${members.length}</p>` : response === 'pending' ? `<p>Leader meminta persetujuan untuk memulai match.</p><button class="btn gold" data-ready>Setuju</button><button class="btn ghost" data-reject>Tolak</button>` : `<p>Status persetujuan: ${response}</p>`;
       } else if (request?.status === 'launching') matchControls = '<p class="success">Semua anggota setuju. Menyiapkan match...</p>';
       else if (request?.status === 'cancelled') matchControls = '<p class="note">Permintaan match dibatalkan.</p>';
-      body.innerHTML = `<div class="scroll"><form class="row" id="friendForm"><input name="friend" maxlength="14" placeholder="Username teman"><button class="btn">Tambah</button></form><div class="list">${friends.map(n=>`<div class="rowitem"><b>${esc(n)}</b><small>Teman tersimpan</small><button class="btn alt" data-invite="${esc(n)}">Undang</button><button class="btn ghost" data-remove="${esc(n)}">Hapus</button></div>`).join('')||'<p class="empty">Belum ada teman. Tambahkan username untuk mulai bermain bersama.</p>'}</div><section class="panel partybox"><h3>Undangan Masuk</h3><div class="list">${incoming || '<p class="empty">Tidak ada undangan.</p>'}</div></section><section class="panel partybox"><h3>Party (${members.length}/4)</h3>${party ? `<p>${isLeader ? 'Kamu adalah leader.' : 'Leader: '+esc(members.find(m=>m.uid===party.leader)?.name || 'Pemain')}</p><div class="list">${roster}</div>${matchControls}${isLeader && (!request || ['cancelled'].includes(request.status)) ? '<div class="row"><select data-party-mode><option value="br">Battle Royale</option><option value="clash">Clash Royale</option></select><select data-party-map><option value="andromeda">Andromeda</option><option value="zipper">Zipper</option><option value="tel-mista">Tel Mista</option><option value="oslo">Oslo</option><option value="ngawi">Ngawi</option><option value="jomokerto">Jomokerto</option></select><button class="btn gold" data-party-start>Match</button></div>' : ''}<button class="btn ghost" data-party-leave>Keluar Party</button>` : '<p class="empty">Belum ada party. Undang teman online untuk membuat party.</p>'}</section></div>`;
+      body.innerHTML = `<div class="scroll"><form class="row" id="friendForm"><input name="friend" maxlength="14" placeholder="Username teman"><button class="btn">Tambah</button></form><div class="list">${friends.map(n=>`<div class="rowitem"><b>${esc(n)}</b><small>Teman tersimpan</small><button class="btn alt" data-invite="${esc(n)}">Undang</button><button class="btn ghost" data-remove="${esc(n)}">Hapus</button></div>`).join('')||'<p class="empty">Belum ada teman. Tambahkan username untuk mulai bermain bersama.</p>'}</div><section class="panel partybox"><h3>Undangan Masuk</h3><div class="list">${incoming || '<p class="empty">Tidak ada undangan.</p>'}</div></section><section class="panel partybox"><h3>Party (${members.length}/4)</h3>${party ? `<p>${isLeader ? 'Kamu adalah leader.' : 'Leader: '+esc(members.find(m=>m.uid===party.leader)?.name || 'Pemain')}</p><div class="list">${roster}</div>${matchControls}${isLeader && (!request || ['cancelled'].includes(request.status)) ? '<div class="row"><select data-party-mode><option value="br">Battle Royale</option><option value="clash">Clash Royale</option></select><button class="btn gold" data-party-start>Match</button></div>' : ''}<button class="btn ghost" data-party-leave>Keluar Party</button>` : '<p class="empty">Belum ada party. Undang teman online untuk membuat party.</p>'}</section></div>`;
     };
     render();
     const stopInvites = watchPartyInvites((v) => { invites = v; render(); });
@@ -208,7 +231,7 @@ const VIEWS = {
         if (b.dataset.accept || b.dataset.decline) { const inv=invites.find(x=>x.id===(b.dataset.accept||b.dataset.decline)); if(inv){ await respondPartyInvite(inv, !!b.dataset.accept, p); party=getActiveParty(); toast(b.dataset.accept?'Bergabung ke party':'Undangan ditolak'); render(); } }
         if (b.hasAttribute('data-kick')) { await removePartyMember(b.dataset.kick); toast('Anggota dikeluarkan'); }
         if (b.hasAttribute('data-party-leave')) { await leaveParty(); party=null; launched=false; toast('Keluar dari party'); render(); }
-        if (b.hasAttribute('data-party-start')) { const mode=body.querySelector('[data-party-mode]')?.value || 'br'; const map=body.querySelector('[data-party-map]')?.value || 'andromeda'; await requestPartyMatch(mode, map); toast('Permintaan match dikirim. Menunggu persetujuan anggota.'); }
+        if (b.hasAttribute('data-party-start')) { const mode=body.querySelector('[data-party-mode]')?.value || 'br'; const map=MAPS[Math.floor(Math.random()*MAPS.length)].id; await requestPartyMatch(mode, map); toast('Permintaan match dikirim. Menunggu persetujuan anggota.'); }
         if (b.hasAttribute('data-ready')) { await answerPartyMatch(true); toast('Persetujuan dikirim'); }
         if (b.hasAttribute('data-reject')) { await answerPartyMatch(false); toast('Match ditolak'); }
       } catch(err){ toast(err.message); }
@@ -247,14 +270,34 @@ const VIEWS = {
     body.onclick = e => { const b=e.target.closest('button'); if(!b)return; if(b.dataset.gloobuy) run({type:'buyGlooSkin',id:b.dataset.gloobuy},'Skin Gloo Wall dibeli'); if(b.dataset.glooequip) run({type:'setGlooSkin',id:b.dataset.glooequip},'Skin Gloo Wall dipakai'); };
   },
   chars(body, p) {
-    const cur = p.char || 'c_adam';
-    body.innerHTML = `<div class="grid scroll wide">${Object.entries(CHARACTERS).map(([id, c]) => {
-      const own = c.price === 0 || p.owned[id];
-      return `<article class="card"><h4>${esc(c.name)}</h4><small>${esc(c.desc)}</small>${c.skill ? `<small>Skill: <b>${esc(c.skillName)}</b> (${c.mana} mana, cd ${c.cd}s)</small>` : ''}
-        <button class="btn ${cur === id ? 'gold' : ''}" data-id="${id}" data-own="${own ? 1 : 0}" ${cur === id ? 'disabled' : ''}>${cur === id ? 'Dipakai' : own ? 'Pilih' : c.price + ' Coin'}</button></article>`;
-    }).join('')}</div>`;
-    body.onclick = (e) => { const b = e.target.closest('button'); if (b && !b.disabled) run({ type: b.dataset.own === '1' ? 'setChar' : 'buyChar', id: b.dataset.id }, 'Berhasil'); };
+    const ids = Object.keys(CHARACTERS), cur = view.char in CHARACTERS ? view.char : (p.char || 'c_adam'), c = CHARACTERS[cur], own = c.price === 0 || p.owned[cur];
+    const preset = p.characterPresets?.[p.activePreset || 0];
+    if (view.charPage === 'presets') {
+      body.innerHTML = `<div class="preset-page"><div class="preset-head"><button class="btn ghost" data-charback>‹ Kembali</button><div><h3>CHARACTER PRESET</h3><small>Simpan kombinasi karakter dan pet</small></div></div><div class="preset-grid">${[0,1,2].map(i => { const v=p.characterPresets?.[i] || {name:`Preset ${i+1}`,char:'c_adam',pet:'cat'}; return `<button class="preset-card ${p.activePreset===i?'active':''}" data-preset="${i}"><span class="preset-number">0${i+1}</span><b>${esc(v.name || `Preset ${i+1}`)}</b><small>${esc(CHARACTERS[v.char]?.name || 'Adam')} · ${esc(v.pet || 'cat')}</small>${p.activePreset===i?'<em>AKTIF</em>':'<span>Gunakan preset</span>'}</button>`; }).join('')}</div><button class="btn gold" data-open-collection>BUKA KOLEKSI KARAKTER</button></div>`;
+      body.onclick = e => { const b=e.target.closest('button'); if(!b)return; if(b.hasAttribute('data-charback')) { view.charPage='collection'; renderModal(); } if(b.dataset.preset!==undefined) run({type:'setPreset',index:+b.dataset.preset},'Preset diterapkan'); if(b.hasAttribute('data-open-collection')) { view.charPage='collection'; renderModal(); } };
+      return;
+    }
+    body.innerHTML = `<div class="character-room"><aside class="character-grid scroll"><div class="character-grid-head"><button class="btn ghost" data-to-presets>‹ Kembali</button><b>KOLEKSI</b><small>${ids.filter(id=>CHARACTERS[id].price===0||p.owned[id]).length}/${ids.length} DIMILIKI</small></div>${ids.map(id=>{const x=CHARACTERS[id], unlocked=x.price===0||p.owned[id];return `<button class="character-tile ${cur===id?'selected':''}" data-charselect="${id}"><span class="mini-block"><i></i><b></b></span><span><b>${esc(x.name)}</b><small>${unlocked?'Dimiliki':num(x.price)+' Coin'}</small></span></button>`}).join('')}</aside><section class="character-stage"><div class="character-platform"><canvas id="characterModel"></canvas></div><div class="character-stage-name">${esc(c.name)}</div><button class="btn gold" data-to-presets>CHARACTER PRESET</button></section><aside class="character-detail"><small class="eyebrow">${own?'OWNED CHARACTER':'LOCKED CHARACTER'}</small><h2>${esc(c.name)}</h2><p>${esc(c.desc)}</p><div class="detail-skill"><small>ABILITY</small><b>${c.skill?esc(c.skillName):'No Special Skill'}</b><span>${c.skill?`${c.mana} Mana · Cooldown ${c.cd}s`:'Karakter standar tanpa skill khusus.'}</span></div><div class="detail-current"><small>PRESET AKTIF</small><b>${esc(preset?.name || 'Preset 1')}</b></div>${own?(p.char===cur?'<button class="btn ghost" disabled>SEDANG DIGUNAKAN</button>':`<button class="btn gold" data-usechar="${cur}">GUNAKAN KARAKTER</button>`):`<button class="btn gold" data-buychar="${cur}">BELI ${num(c.price)} COIN</button>`}<button class="btn ghost" data-to-presets>LIHAT PRESET</button></aside></div>`;
+    mountCharacterPreview(body.querySelector('#characterModel'), p, cur);
+    body.onclick = e => { const b=e.target.closest('button'); if(!b)return; if(b.dataset.charselect){view.char=b.dataset.charselect;renderModal()} if(b.hasAttribute('data-to-presets')){view.charPage='presets';renderModal()} if(b.dataset.usechar)run({type:'setChar',id:b.dataset.usechar},'Karakter digunakan'); if(b.dataset.buychar)run({type:'buyChar',id:b.dataset.buychar},'Karakter berhasil dibeli'); };
   },
+  pets(body,p) {
+    const pets=[['cat','Kucing','Teman kecil yang setia.'],['eagle','Elang','Terbang mengitari arena.'],['tiger','Harimau Kecil','Lincah dan berani.'],['orangutan','Orangutan','Teman hutan yang kuat.'],['dog','Anjing','Selalu mengikuti pemiliknya.'],['fox','Rubah','Lincah dengan ekor lebat.'],['panda','Panda','Santai tetapi tangguh.']]; const owned=p.pets?.owned||['cat'];
+    body.innerHTML=`<div class="feature-hero"><div><small>COMPANION COLLECTION</small><h2>PET SYSTEM</h2><p>Pet menemani karakter di lobby dan menjadi bagian dari preset.</p></div><div class="pet-hero-icon">${icon('paw-print')}</div></div><div class="grid scroll wide">${pets.map(([id,n,d])=>`<article class="card pet-card"><div class="pet-avatar pet-${id}"></div><h3>${n}</h3><small>${d}</small>${owned.includes(id)?`<button class="btn ${p.pets?.equipped===id?'ghost':'gold'}" data-pet="${id}" ${p.pets?.equipped===id?'disabled':''}>${p.pets?.equipped===id?'Digunakan':'Pakai Pet'}</button>`:`<button class="btn ghost" disabled>Segera Hadir</button>`}</article>`).join('')}</div><p class="note">Saat ini Kucing tersedia sebagai pet awal. Pet lain sudah disiapkan di koleksi, tetapi belum dibuka melalui gameplay.</p>`;
+    body.onclick=e=>{const id=e.target.closest('[data-pet]')?.dataset.pet;if(id)run({type:'setPet',id},'Pet diganti')};
+  },
+  guild(body,p) {
+    const g=p.guild; body.innerHTML=g?`<div class="guild-hero"><small>GUILD PROFILE</small><h2>[${esc(g.tag)}] ${esc(g.name)}</h2><div class="guild-level">LEVEL ${g.level||1}</div><p>${g.members?.length||1} Anggota · ${num(g.exp||0)} Guild EXP</p><div class="bar"><b style="width:${(g.exp||0)%1000/10}%"></b></div><b>${esc(g.role||'Member')}</b></div><div class="panel"><h3>Guild Activity</h3><p>EXP dari match akan menambah level guild.</p><button class="btn ghost" data-leaveguild>Keluar Guild</button></div>`:`<div class="feature-hero"><div><small>SOCIAL & COMPETITIVE</small><h2>GUILD SYSTEM</h2><p>Buat guild untuk mengumpulkan pemain dan menaikkan level bersama.</p></div>${icon('users')}</div><form id="guildForm" class="guild-form"><label>Nama Guild<input name="name" maxlength="18" placeholder="Contoh: BLOCKY SQUAD" required minlength="3"></label><button class="btn gold">BUAT GUILD</button></form><p class="note">Pembuatan guild saat ini disimpan pada profil lokal/server. Pencarian guild publik dan undangan anggota lintas akun belum aktif.</p>`;
+    body.onclick=e=>{if(e.target.closest('[data-leaveguild]'))run({type:'leaveGuild'},'Keluar dari guild')}; const f=body.querySelector('#guildForm'); if(f)f.onsubmit=e=>{e.preventDefault();run({type:'createGuild',name:f.elements.name.value},'Guild berhasil dibuat')};
+  },
+  pass(body,p) {
+    const xp=p.blockyPass?.xp||0,claimed=p.blockyPass?.claimed||[]; body.innerHTML=`<div class="pass-banner"><small>SEASON 01 · PROGRESSION</small><h2>BLOCKY PASS</h2><p>Kumpulkan EXP dari match untuk membuka hadiah setiap tier.</p><div class="pass-progress"><b style="width:${Math.min(100,xp/3000*100)}%"></b></div><strong>${num(xp)} / 3.000 PASS EXP</strong></div><div class="pass-tiers scroll">${Array.from({length:30},(_,i)=>{const t=i+1,ready=xp>=t*100,done=claimed.includes(t);return `<article class="pass-tier ${ready?'ready':''} ${done?'claimed':''}"><b>${String(t).padStart(2,'0')}</b><span><strong>Tier ${t}</strong><small>${done?'Hadiah sudah diklaim':ready?'Hadiah tersedia':'Butuh '+(t*100)+' EXP'}</small></span><button class="btn ${ready?'gold':'ghost'}" data-pass="${t}" ${!ready||done?'disabled':''}>${done?'Selesai':ready?'Klaim':'Terkunci'}</button></article>`}).join('')}</div>`;
+    body.onclick=e=>{const tier=e.target.closest('[data-pass]')?.dataset.pass;if(tier)run({type:'claimPass',tier},'Hadiah Blocky Pass diklaim')};
+  },
+  history(body,p) { const rows=p.matchHistory||[]; body.innerHTML=`<div class="history-summary"><b>${p.stats.matches}</b><span>Total Match</span><b>${p.stats.wins}</b><span>Victory</span><b>${p.stats.kills}</b><span>Total Kill</span></div><div class="list scroll">${rows.map(r=>`<article class="history-row"><div><b class="${r.win?'win':'lose'}">${r.win?'VICTORY':'DEFEAT'}</b><small>${esc(r.mode)} · ${esc(r.map||'Random')} · ${new Date(r.at).toLocaleString('id-ID')}</small></div><div><b>${r.kills} KILL</b><small>${r.assists} Assist · ${r.damage} Damage</small></div><div><b>#${r.placement}/${r.total}</b><small>+${r.exp} EXP</small></div></article>`).join('')||'<p class="empty">Belum ada riwayat match.</p>'}</div>`; body.onclick=null; },
+  emotes(body,p) { const em=[['wave','Melambai'],['laugh','Tertawa'],['angry','Marah'],['sit','Duduk'],['dance','Menari'],['clap','Tepuk Tangan'],['cheer','Bersorak']]; const owned=p.emoteCollection||['wave','laugh','sit']; body.innerHTML=`<div class="feature-hero"><div><small>LOBBY COLLECTION</small><h2>EMOTE COLLECTION</h2><p>Koleksi gerakan karakter untuk lobby dan Social Island.</p></div>${icon('smile')}</div><div class="grid scroll wide">${em.map(([id,n],i)=>`<article class="card emote-card"><div class="emote-preview">${icon('user-round')}</div><h3>${n}</h3><small>${owned.includes(id)?'Dimiliki':'Belum tersedia'}</small><button class="btn ${owned.includes(id)?'gold':'ghost'}" ${owned.includes(id)?'':'disabled'}>${owned.includes(id)?'Tersedia':'Segera Hadir'}</button></article>`).join('')}</div>`; body.onclick=null; },
+  achievements(body,p) { const s=p.stats, a=[['First Drop','Selesaikan 1 match',s.matches,1],['Winner','Menangkan 1 match',s.wins,1],['Veteran','Selesaikan 25 match',s.matches,25],['Eliminator','Dapatkan 100 kill',s.kills,100],['Sharpshooter','Dapatkan 1.000 damage',s.damage,1000],['Champion','Menangkan 10 match',s.wins,10]]; body.innerHTML=`<div class="feature-hero"><div><small>PLAYER MILESTONES</small><h2>ACHIEVEMENTS</h2><p>Target permanen berdasarkan statistik akun.</p></div>${icon('medal')}</div><div class="list scroll">${a.map(([n,d,v,g])=>`<article class="achievement-row"><div class="achievement-icon">${icon('trophy')}</div><div><b>${n}</b><small>${d}</small><div class="bar"><b style="width:${Math.min(100,v/g*100)}%"></b></div></div><strong>${Math.min(v,g)}/${g}</strong></article>`).join('')}</div>`; body.onclick=null; },
+  hud(body,p) { const h=p.hudLayout||{scale:100,opacity:100}; body.innerHTML=`<div class="feature-hero"><div><small>IN-GAME INTERFACE</small><h2>HUD CUSTOMIZATION</h2><p>Atur skala dan transparansi tombol kontrol saat bermain.</p></div>${icon('sliders-horizontal')}</div><form id="hudForm" class="form scroll"><label>Ukuran HUD <output>${h.scale}%</output><input type="range" name="scale" min="70" max="130" value="${h.scale}"></label><label>Transparansi HUD <output>${h.opacity}%</output><input type="range" name="opacity" min="30" max="100" value="${h.opacity}"></label><button class="btn gold">SIMPAN HUD</button></form>`; const f=body.querySelector('#hudForm'); f.oninput=e=>{if(e.target.name)e.target.previousElementSibling&&(e.target.previousElementSibling.textContent=e.target.name==='scale'?`Ukuran HUD ${e.target.value}%`:`Transparansi HUD ${e.target.value}%`)}; f.onsubmit=e=>{e.preventDefault();run({type:'setHud',scale:f.elements.scale.value,opacity:f.elements.opacity.value},'Pengaturan HUD disimpan')}; },
   mystery(body, p) {
     const ev = store.event, now = Date.now();
     body.onclick = null;
@@ -366,14 +409,12 @@ export function showRankUp(from, to) {
 // ---------- Lobby ----------
 export function initLobby(stage, onPlay) {
   let mode = 0;
-  const showMode = () => {
-    $('#mapSelect').hidden = ['training','social'].includes(MODES[mode].id);
-    $('#modeList').innerHTML = MODES.map((m, i) => `<span class="${i === mode ? 'on' : ''}">${m.name}</span>`).join('');
-    $('#modeDesc').textContent = MODES[mode].desc;
-  };
-  const step = (d) => { mode = (mode + d + MODES.length) % MODES.length; showMode(); };
-  $('#modePrev').onclick = () => step(-1); $('#modeNext').onclick = () => step(1);
-  $('#modeList').onclick = (e) => { const i = [...e.currentTarget.children].indexOf(e.target); if (i >= 0) { mode = i; showMode(); } };
+  const showMode = () => { $('#modeName').textContent = MODES[mode].name; $('#modeDesc').textContent = MODES[mode].desc; };
+  const modeModal = $('#modeModal');
+  const openModes = () => { $('#modeOptions').innerHTML = MODES.map((m,i)=>`<button class="mode-option ${i===mode?'active':''}" data-mode="${i}"><b>${esc(m.name)}</b><small>${esc(m.desc)}</small></button>`).join(''); modeModal.hidden=false; };
+  $('#modePicker').onclick = openModes; $('#modeClose').onclick = () => { modeModal.hidden=true; };
+  modeModal.addEventListener('pointerdown',e=>{if(e.target===modeModal)modeModal.hidden=true});
+  $('#modeOptions').onclick=e=>{const i=e.target.closest('[data-mode]')?.dataset.mode;if(i!==undefined){mode=+i;showMode();modeModal.hidden=true;}};
   $('#turnL').onclick = () => stage.turn(-0.6); $('#turnR').onclick = () => stage.turn(0.6);
   $('#actions').onclick = (e) => { const b = e.target.closest('button'); if (b) openModal(b.dataset.open); };
   $('#topright').onclick = (e) => {
