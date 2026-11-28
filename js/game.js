@@ -1,6 +1,6 @@
 // Gameplay Battle Royale: pesawat, parasut, looting, tembak-menembak, bot, zona, dan HUD.
 import * as THREE from 'three';
-import { WEAPONS, AMMO, ARMOR, SKINS, CHARACTERS, MEDS } from '../shared/catalog.js';
+import { WEAPONS, AMMO, ARMOR, SKINS, CHARACTERS, MEDS, GLOO_SKINS } from '../shared/catalog.js';
 import { createCharacter, createGun, createChute, box } from './character.js';
 import { generateWorld, buildWorldMesh, moveBody, blocked, floorAt, rayBox, rayWorld, seeded, vehicleSolid, HALF } from './world.js';
 import { settings } from './settings.js';
@@ -36,7 +36,7 @@ export function startGame(match, profile, onEnd) {
   scene.add(new THREE.HemisphereLight(0xffffff, 0x4b6b3a, 1.9));
   const sun = new THREE.DirectionalLight(0xfff2d0, 1.7); sun.position.set(40, 80, 25); scene.add(sun);
 
-  const world = generateWorld(match.seed);
+  const world = generateWorld(match.seed, mode);
   const worldMesh = buildWorldMesh(world.visuals); scene.add(worldMesh);
   const rng = seeded(match.seed ^ 0x2545f491);
 
@@ -81,7 +81,7 @@ export function startGame(match, profile, onEnd) {
     const ch = createCharacter(info.equipped);
     scene.add(ch.root);
     const a = {
-      id: info.id, name: info.name, rank: info.rank, isBot: !!info.bot, isMe: !!info.me, skins: info.weaponSkins || {}, evo: info.evo || {},
+      id: info.id, name: info.name, rank: info.rank, squad: info.squad || null, isBot: !!info.bot, isMe: !!info.me, skins: info.weaponSkins || {}, evo: info.evo || {},
       ch, x: 0, y: 0, z: 0, vy: 0, yaw: 0, hp: 100, mana: 100, armor: { h: 0, v: 0 }, weapons: [null, null], slot: 2,
       alive: true, stance: 'stand', phase: 'plane', speed: 0, dmgBy: new Map(), lastHurt: -99, grounded: false, chute: null, punch: 0, seen: false,
       jumpAt: 2.5 + rng() * (PLANE_TIME - 4), brain: { think: rng(), target: null, since: 0, dir: rng() * 6.28, cool: 1, stuck: 0, goal: null, landed: 0 },
@@ -90,8 +90,8 @@ export function startGame(match, profile, onEnd) {
       a.phase = 'ground';
       const spawnAngle = (index / match.total) * Math.PI * 2;
       const rad = mode === 'clash' ? 30 : index ? 14 + index * 3 : 0;
-      a.x = Math.cos(spawnAngle) * rad; a.z = training && !index ? 0 : Math.sin(spawnAngle) * rad;
-      if (training && index) { a.x = -18 + index * 5; a.z = 24 + (index % 2) * 8; a.yaw = Math.PI; }
+      a.x = Math.cos(spawnAngle) * rad; a.z = training && !index ? -8 : Math.sin(spawnAngle) * rad;
+      if (training && index) { a.x = 38 + (index % 4) * 5; a.z = 15 + Math.floor(index / 4) * 4; a.yaw = Math.PI; }
       while (blocked(world, a.x, a.y, a.z, 2)) a.x += 0.7;
       if (mode === 'clash') giveGun(a, ['ak47', 'mp40', 'm4a1', 'm1887', 'scar'][Math.floor(rng() * 5)]);
     }
@@ -107,6 +107,13 @@ export function startGame(match, profile, onEnd) {
   const me = actors.get(myId);
   const alive = () => [...actors.values()].filter((a) => a.alive);
   const chr = CHARACTERS[profile.char] || CHARACTERS.c_adam;
+  let spectatorTarget = null;
+  let squadHud = null;
+  if (match.squadId) {
+    squadHud = document.createElement('div'); squadHud.className = 'squad-roster';
+    squadHud.innerHTML = match.roster.filter((x) => x.squad === match.squadId).map((x, i) => `<div>${i + 1}) ${String(x.name).replace(/[&<>"']/g, '')}</div>`).join('');
+    document.body.append(squadHud);
+  }
   const meds = { medkit: 0, super: 0 }, nets = [], EMOTES = ['wave', 'laugh', 'angry', 'sit'];
   let healRate = 12, scopeLv = 0, scopeBest = 2, skillCd = 0, shieldT = 0, sprintT = 0, drive = null, nearV = null, emote = null, emoteI = -1;
   const vehicles = (world.vehicles || []).map((v) => {
@@ -147,11 +154,11 @@ export function startGame(match, profile, onEnd) {
     scene.add(g); loot.set(item.id, { ...item, mesh: g });
   }
   if (training) {
-    Object.keys(WEAPONS).filter((k) => k !== 'fist').forEach((key, i) => addLoot({ id: `t${i}`, type: 'weapon', key, mag: WEAPONS[key].mag, x: -12 + i * 3, y: 0.1, z: 7 }));
-    Object.keys(AMMO).forEach((k) => { ammo[k] = 999; });
-    ['h', 'v'].forEach((key, s) => [1, 2, 3].forEach((tier) => addLoot({ id: `a${key}${tier}`, type: 'armor', key, tier, x: (s ? 4 : -8) + tier * 2, y: 0.1, z: -7 })));
-    addLoot({ id: 'tm1', type: 'med', key: 'medkit', x: 8, y: 0.1, z: 7 }); addLoot({ id: 'tm2', type: 'med', key: 'super', x: 10, y: 0.1, z: 7 });
-    addLoot({ id: 'ts3', type: 'scope', key: 3, x: 12, y: 0.1, z: 7 }); addLoot({ id: 'ts4', type: 'scope', key: 4, x: 14, y: 0.1, z: 7 });
+    Object.keys(WEAPONS).filter((k) => k !== 'fist').forEach((key, i) => addLoot({ id: `t${i}`, type: 'weapon', key, mag: WEAPONS[key].mag, x: -13 + i * 3, y: 0.95, z: 8 }));
+    Object.keys(AMMO).forEach((k,i) => { ammo[k] = 999; addLoot({id:`ta${i}`,type:'ammo',key:k,n:999,x:-12+i*4,y:.95,z:13}); });
+    ['h', 'v'].forEach((key, s) => [1, 2, 3].forEach((tier) => addLoot({ id: `a${key}${tier}`, type: 'armor', key, tier, x: (s ? 5 : -8) + tier * 2, y: 0.95, z: 13 })));
+    addLoot({ id: 'tm1', type: 'med', key: 'medkit', x: 9, y: 0.95, z: 8 }); addLoot({ id: 'tm2', type: 'med', key: 'super', x: 12, y: 0.95, z: 8 });
+    addLoot({ id: 'ts3', type: 'scope', key: 3, x: 15, y: 0.95, z: 8 }); addLoot({ id: 'ts4', type: 'scope', key: 4, x: 18, y: 0.95, z: 8 });
   } else if (!social) world.loot.forEach(addLoot);
   function removeLoot(id) { const l = loot.get(id); if (l) { scene.remove(l.mesh); loot.delete(id); } }
 
@@ -222,6 +229,8 @@ export function startGame(match, profile, onEnd) {
   // ---------- Pertempuran ----------
   const stats = { kills: 0, assists: 0, damage: 0 };
   const markers = new Map();
+  const glooWalls = [];
+  let glooCooldown = 0;
   const current = (a) => (a.slot < 2 && a.weapons[a.slot] ? a.weapons[a.slot] : { key: 'fist', mag: 0 });
   const hitbox = (a) => {
     const r = a.stance === 'prone' ? 0.75 : 0.46;
@@ -272,8 +281,23 @@ export function startGame(match, profile, onEnd) {
       if (s?.evo && me.evo[s.id] >= 7) burst(V(victim.x, victim.y + 1, victim.z), s.accent, 40, 0.22, 8);
     } else if (assists.includes(myId)) stats.assists++;
     if (!training) feed(killer ? `${killer.name} mengalahkan ${victim.name}` : `${victim.name} gugur`);
-    if (victim.isMe) finish(false);
-    else if (!training && !social && me.alive && alive().length === 1) finish(true);
+    if (victim.isMe) {
+      const mates = match.squadId ? [...actors.values()].filter((a) => a.squad === match.squadId && a !== me && a.alive) : [];
+      spectatorTarget = mates[0] || null;
+      if (spectatorTarget) { $('#prompt').textContent = `Spectating: ${spectatorTarget.name}`; toast(`Mengikuti kamera ${spectatorTarget.name}`); }
+      else finish(false);
+    } else if (spectatorTarget === victim) {
+      spectatorTarget = [...actors.values()].find((a) => a.squad === match.squadId && a !== me && a.alive) || null;
+      if (spectatorTarget) $('#prompt').textContent = `Spectating: ${spectatorTarget.name}`;
+      else if (!me.alive) finish(false);
+    }
+    else if (!training && !social) {
+      const living = alive();
+      if (match.squadId) {
+        const squadLiving = living.filter((a) => a.squad === match.squadId);
+        if (squadLiving.length && living.every((a) => a.squad === match.squadId)) finish(true);
+      } else if (me.alive && living.length === 1) finish(true);
+    }
   }
 
   function finish(win) {
@@ -315,7 +339,8 @@ export function startGame(match, profile, onEnd) {
         const head = target.stance !== 'prone' && end.y > target.y + HEIGHT[target.stance] - 0.5;
         const falloff = t > spec.range * 0.6 ? 0.7 : 1;
         const botScale = a.isBot ? 0.42 + a.rank * 0.04 : 1;
-        damage(target, spec.dmg * falloff * (head ? 1.6 : 1) * botScale, a, head);
+        const skinBoost = skin ? 1.05 + (skin.evo ? Math.min(0.1, Math.max(0, level-1)*0.015) : 0) : 1;
+        damage(target, spec.dmg * skinBoost * falloff * (head ? 1.6 : 1) * botScale, a, head);
         burst(end, level >= 5 ? skin.accent : 0xef4444, level >= 5 ? 8 : 4);
       } else if (t < spec.range) burst(end, 0xcfc4a8, 2, 0.08, 2);
     }
@@ -323,6 +348,21 @@ export function startGame(match, profile, onEnd) {
     sfx.shot(spec.cat, a.isMe ? 0 : dist2(a, me), w.key);
     if (!a.isMe && dist2(a, me) < 90) markers.set(a.id, { x: a.x, z: a.z, t: clock });
     net?.event({ k: 'shot', from: a.id, o: [muzzle.x, muzzle.y, muzzle.z], e: [end.x, end.y, end.z], w: w.key, c: color });
+  }
+
+  function deployGloo() {
+    if (training || social || !me.alive || me.phase !== 'ground') return toast('Gloo Wall hanya tersedia di mode pertempuran');
+    if (glooCooldown > 0) return toast(`Gloo Wall siap dalam ${Math.ceil(glooCooldown)} detik`);
+    const skin = GLOO_SKINS[profile.glooSkin] || GLOO_SKINS.gloo_default;
+    const x = me.x + Math.sin(cam.yaw) * 2.8, z = me.z + Math.cos(cam.yaw) * 2.8;
+    const group = new THREE.Group();
+    const wall = box(group,0,1.45,0,5.2,2.9,.55,skin.color,true);
+    box(group,0,1.45,.29,4.8,2.5,.08,skin.accent,true);
+    group.position.set(x, floorAt(world,x,z), z); group.rotation.y = cam.yaw;
+    scene.add(group);
+    glooWalls.push({ mesh:group, until:clock+25, bounds:{x0:x-2.6,x1:x+2.6,y0:0,y1:3,z0:z-.35,z1:z+.35} });
+    glooCooldown = 18;
+    feed(`${me.name} memasang Gloo Wall`);
   }
 
   // ---------- Pemain ----------
@@ -470,10 +510,16 @@ export function startGame(match, profile, onEnd) {
 
   // ---------- Kontrol ----------
   const tap = (sel, fn) => on($(sel), 'pointerdown', (e) => { e.preventDefault(); fn(); });
-  tap('#bJump', jump); tap('#bJumpPlane', jump); tap('#bCrouch', () => setStance('crouch')); tap('#bProne', () => setStance('prone'));
+  tap('#bGloo', deployGloo); tap('#bJump', jump); tap('#bJumpPlane', jump); tap('#bCrouch', () => setStance('crouch')); tap('#bProne', () => setStance('prone'));
   tap('#bBag', () => toggleInventory()); tap('#bReload', reload); tap('#bDash', useDash); tap('#bHeal', useHeal);
   tap('#bSkill', useSkill); tap('#bScope', cycleScope); tap('#bCar', toggleCar); tap('#bEmote', cycleEmote); tap('#bChat', () => openModal('chat'));
   tap('#bPickup', () => pickable && pickup(pickable));
+  tap('#bTrainingPortal', () => {
+    if (!training) return;
+    const inRange = me.x > 15;
+    me.x = inRange ? 0 : 38; me.z = inRange ? -8 : -12; me.y = 0; me.vy = 0; me.phase = 'ground';
+    cam.yaw = inRange ? 0 : Math.PI; me.yaw = cam.yaw; toast(inRange ? 'Kembali ke ruang persiapan' : 'Masuk firing range');
+  });
   tap('#bQuit', () => {
     if (training || social) return finish(false);
     if (performance.now() - quitArm < 3000) return damage(me, 9999, null, false);
@@ -683,7 +729,8 @@ export function startGame(match, profile, onEnd) {
       if (a.phase === 'fall' && !a.chute) { a.chute = createChute(a.ch.look.chute); scene.add(a.chute); }
       if (a.chute) { a.chute.position.set(a.x, a.y, a.z); if (a.phase !== 'fall') { scene.remove(a.chute); a.chute = null; } }
     }
-    a.ch.root.visible = a.phase !== 'plane' && a.phase !== 'car' && (a.alive || clock - a.diedAt < 5);
+    const prepHidden = training && me.x < 15 && a !== me;
+    a.ch.root.visible = !prepHidden && a.phase !== 'plane' && a.phase !== 'car' && (a.alive || clock - a.diedAt < 5);
     a.ch.root.position.set(a.x, a.y, a.z); a.ch.root.rotation.y = a.yaw;
     const w = current(a).key, skin = a.skins[w];
     a.ch.setWeapon(w, skin, a.evo[skin] || 1); a.ch.setArmor(a.armor.h, a.armor.v);
@@ -701,15 +748,17 @@ export function startGame(match, profile, onEnd) {
   }
 
   function updateCamera(dt) {
-    const sniper = WEAPONS[current(me).key].cat === 'Sniper' && me.phase === 'ground';
+    if (spectatorTarget && !spectatorTarget.alive) spectatorTarget = [...actors.values()].find((a) => a.squad === match.squadId && a !== me && a.alive) || null;
+    const followed = spectatorTarget || me;
+    const sniper = WEAPONS[current(followed).key].cat === 'Sniper' && followed.phase === 'ground';
     const fov = scopeLv ? [65, 36, 25, 17][scopeLv] : sniper ? 34 : 65;
     if (Math.abs(camera.fov - fov) > 0.1) { camera.fov += (fov - camera.fov) * Math.min(1, dt * 10); camera.updateProjectionMatrix(); }
     const f = V(Math.sin(cam.yaw) * Math.cos(cam.pitch), Math.sin(cam.pitch), Math.cos(cam.yaw) * Math.cos(cam.pitch));
-    if (me.phase === 'plane') {
+    if (followed.phase === 'plane') {
       const p = planePos(); camera.position.copy(p).addScaledVector(f, -26).add(V(0, 5, 0)); camera.lookAt(p.x, p.y, p.z); return;
     }
-    const pivot = V(me.x, me.y + (me.stance === 'prone' ? 1.0 : me.stance === 'crouch' ? 1.55 : 2.0), me.z);
-    const shoulder = me.phase === 'ground' ? 0.75 : 0;
+    const pivot = V(followed.x, followed.y + (followed.stance === 'prone' ? 1.0 : followed.stance === 'crouch' ? 1.55 : 2.0), followed.z);
+    const shoulder = followed.phase === 'ground' ? 0.75 : 0;
     const want = pivot.clone().add(V(-Math.cos(cam.yaw) * shoulder, 0, Math.sin(cam.yaw) * shoulder)).addScaledVector(f, me.phase === 'ground' ? -4.6 : -10);
     const dir = want.clone().sub(pivot), len = dir.length(); dir.normalize();
     const t = rayWorld(world, pivot, dir, len);
@@ -755,6 +804,10 @@ export function startGame(match, profile, onEnd) {
     $('#hKill').textContent = stats.kills; $('#hAlive').textContent = alive().length;
     $('#hZone').textContent = training ? 'Latihan' : social ? 'Social Island' : `${zone.shrinking ? 'Zona menyusut' : 'Zona'} ${Math.ceil(zone.next)}s`;
     $('#hpFill').style.width = `${me.hp}%`; $('#hpText').textContent = `HP ${Math.ceil(me.hp)}`;
+    $('#bTrainingPortal').hidden = !training || (Math.hypot(me.x, me.z + 10) > 5 && Math.hypot(me.x - 38, me.z + 14) > 5);
+    $('#bTrainingPortal').textContent = me.x > 15 ? 'Keluar Range' : 'Masuk Range';
+    $('#bGloo small').textContent = glooCooldown > 0 ? `${Math.ceil(glooCooldown)}s` : 'Gloo';
+    $('#bGloo').disabled = glooCooldown > 0;
     $('#bSkill').hidden = !chr.skill || social; $('#bSkill small').textContent = skillCd > 0 ? `${Math.ceil(skillCd)}s` : (chr.skillName || '');
     $('#bCar').hidden = !(nearV || me.phase === 'car'); $('#bCar small').textContent = me.phase === 'car' ? 'Turun' : 'Naik';
     $('#scopeOv').hidden = !scopeLv; $('#scopeOv').textContent = `x${scopeLv + 1}`; $('#bScope small').textContent = scopeLv ? `x${scopeLv + 1}` : 'Scope';
@@ -793,7 +846,8 @@ export function startGame(match, profile, onEnd) {
     const running = lead <= 0;
     updateZone();
     if (running && !ended) {
-      cooldown -= dt;
+      cooldown -= dt; glooCooldown = Math.max(0,glooCooldown-dt);
+      for(let i=glooWalls.length-1;i>=0;i--) if(glooWalls[i].until<=clock){scene.remove(glooWalls[i].mesh);glooWalls.splice(i,1);}
       if (reloading) {
         reloading -= dt;
         if (reloading <= 0) {
@@ -841,6 +895,7 @@ export function startGame(match, profile, onEnd) {
     $('#bFire').classList.remove('on'); $('#inventory').hidden = true; $('#prompt').textContent = ''; $('#feed').innerHTML = '';
     $('#damageFlash').style.opacity = 0; $('#bPickup').hidden = true; $('#bJumpPlane').hidden = true;
     net?.leave();
+    squadHud?.remove();
     worldMesh.geometry.dispose(); worldMesh.material.dispose(); scene.clear(); renderer.renderLists?.dispose();
   }
 

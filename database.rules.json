@@ -1,10 +1,33 @@
 {
   "rules": {
+    "presence": {
+      ".read": "auth != null",
+      "$uid": { ".write": "auth != null && auth.uid === $uid" }
+    },
+    "partyInvites": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        "$party": { ".write": "auth != null && (auth.uid === $uid || root.child('parties').child($party).child('leader').val() === auth.uid)" }
+      }
+    },
+    "partyByUser": {
+      "$uid": {
+        ".read": "auth != null",
+        ".write": "auth != null && (auth.uid === $uid || root.child('parties').child(data.val()).child('leader').val() === auth.uid)"
+      }
+    },
+    "parties": {
+      "$party": {
+        ".read": "auth != null",
+        ".write": "auth != null && (!data.exists() ? newData.child('leader').val() === auth.uid : data.child('members').child(auth.uid).exists() || root.child('partyInvites').child(auth.uid).child($party).exists())"
+      }
+    },
     "queue": {
       "$bucket": { ".read": "auth != null", ".write": "auth != null" }
     },
     "rooms": {
       "$room": {
+        "launch": { ".read": "auth != null", ".write": "auth != null" },
         "players": {
           ".read": "auth != null",
           "$uid": { ".write": "auth != null && auth.uid === $uid" }

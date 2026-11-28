@@ -70,3 +70,53 @@ test('username dibersihkan', () => {
   assert.equal(newProfile('  <b>Andi</b>  ', T).name, 'bAndib');
   assert.throws(() => newProfile('<>', T));
 });
+
+
+test('newbie daily memberi hadiah bertingkat dan reset streak setelah jeda', () => {
+  const start = Date.parse('2026-11-28T12:00:00+07:00');
+  let p = newProfile('Tester', start);
+  let r = applyAction(p, { type: 'claimNewbieDaily' }, { now: start });
+  assert.equal(r.result.day, 1);
+  assert.equal(r.profile.coin, 1500);
+  assert.equal(r.profile.iron, 1500);
+  r = applyAction(r.profile, { type: 'claimNewbieDaily' }, { now: start + 86400e3 });
+  assert.equal(r.result.day, 2);
+  r = applyAction(r.profile, { type: 'claimNewbieDaily' }, { now: start + 3 * 86400e3 });
+  assert.equal(r.result.day, 1);
+});
+
+test('avatar dan skin gloo wall dibeli dengan coin', () => {
+  const now = Date.now();
+  const p = newProfile('Tester', now);
+  const a = applyAction(p, { type: 'buyAvatar', id: 'indonesia' }, { now });
+  assert.equal(a.profile.ownedAvatars.indonesia, true);
+  assert.equal(a.profile.coin, 950);
+  const g = applyAction(a.profile, { type: 'buyGlooSkin', id: 'gloo_neon' }, { now });
+  assert.equal(g.profile.ownedGlooSkins.gloo_neon, true);
+  assert.equal(g.profile.coin, 50);
+});
+
+test('bundle bisa dipecah menjadi lima slot kosmetik terpisah', () => {
+  let p = base();
+  p.owned.b_hercules = true;
+  const r = run(p, { type: 'splitBundle', id: 'b_hercules' });
+  assert.equal(r.result.parts.length, 5);
+  for (const id of r.result.parts) assert.equal(r.profile.owned[id], true);
+  const hat = r.result.parts.find(id => id.endsWith('_hat'));
+  p = run(r.profile, { type: 'equip', slot: 'hat', id: hat }).profile;
+  assert.equal(p.equipped.hat, hat);
+  assert.equal(p.equipped.bundle, undefined);
+});
+
+test('event kill dan bundle punya progress dan hadiah otoritatif', () => {
+  let p = base();
+  p.owned.b_hercules = true;
+  p = run(p, { type: 'equip', slot: 'bundle', id: 'b_hercules' }).profile;
+  assert.equal(p.eventProgress.bundles, 1);
+  p = run(p, { type: 'match', mode: 'br', kills: 5, placement: 4 }).profile;
+  assert.equal(p.eventProgress.kills, 5);
+  assert.equal(p.eventProgress.weaponKills, 5);
+  p = run(p, { type: 'claimEvent', id: 'weapon5' }).profile;
+  assert.equal(p.coin, 1865);
+  assert.throws(() => run(p, { type: 'claimEvent', id: 'weapon5' }));
+});

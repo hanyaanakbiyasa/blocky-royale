@@ -1,5 +1,5 @@
 // Aturan ekonomi. Dijalankan di server saat online (otoritatif) dan di browser saat offline.
-import { ITEMS, SKINS, BANNERS, RATES, PITY, SPIN_COST, EVO_MAX, EVO_COST, SLOT_GROUPS, MODES, rankIndex, MYSTERY_ITEMS, MYSTERY_MILESTONES, CHARACTERS } from './catalog.js';
+import { ITEMS, SKINS, BANNERS, RATES, PITY, SPIN_COST, EVO_MAX, EVO_COST, SLOT_GROUPS, MODES, rankIndex, MYSTERY_ITEMS, MYSTERY_MILESTONES, CHARACTERS, GLOO_SKINS, AVATARS, BUNDLE_PARTS } from './catalog.js';
 
 export const STARTER = { coin: 1000, iron: 1000 };
 export const DAILY_IRON = 100;
@@ -18,6 +18,7 @@ export function cleanName(raw) {
 }
 // Tanggal WIB (UTC+7) supaya reset harian jam 00:00 Indonesia barat
 export const dayKey = (now) => new Date(now + 7 * 3600e3).toISOString().slice(0, 10);
+const weekKey = (now) => { const d = new Date(now + 7 * 3600e3); const day = (d.getUTCDay() + 6) % 7; d.setUTCDate(d.getUTCDate() - day); return d.toISOString().slice(0,10); };
 
 export function newProfile(name, now) {
   return {
@@ -77,7 +78,98 @@ export function applyAction(profile, action, { now = Date.now(), rng = Math.rand
   const p = structuredClone(profile);
   let result = {};
   switch (action?.type) {
-    case 'login': p.lastLogin = now; break;
+    case 'login': {
+      p.lastLogin = now;
+      p.eventProgress ||= {};
+      const today = dayKey(now);
+      if (p.eventProgress.lastLoginDay !== today) {
+        p.eventProgress.logins = (p.eventProgress.logins || 0) + 1;
+        const month = today.slice(0,7);
+        if (p.eventProgress.monthKey !== month) { p.eventProgress.monthKey = month; p.eventProgress.monthlyLogins = 0; }
+        p.eventProgress.monthlyLogins = (p.eventProgress.monthlyLogins || 0) + 1;
+        p.eventProgress.ramadhanLogins = (p.eventProgress.ramadhanLogins || 0) + 1;
+        p.eventProgress.lastLoginDay = today;
+      }
+      break;
+    }
+    case 'claimNewbieDaily': {
+      const today = dayKey(now), state = p.newbieDaily || { day: 0, lastDay: '' };
+      if (state.lastDay === today) fail('Check-in hari ini sudah diklaim');
+      const prev = state.lastDay ? new Date(`${state.lastDay}T00:00:00+07:00`).getTime() : 0;
+      const current = new Date(`${today}T00:00:00+07:00`).getTime();
+      const day = prev && current - prev === 86400e3 ? Math.min(7, state.day + 1) : 1;
+      const rewards = [
+        { coin: 500, iron: 500 }, { coin: 1500, iron: 1500 }, { coin: 2500, iron: 2500 },
+        { coin: 3500, iron: 3500 }, { coin: 5000, iron: 5000 }, { coin: 7500, iron: 7500 },
+        { bundle: 'b_hercules', skin: 's_scar_laut', gloo: 'gloo_gold' },
+      ];
+      const reward = rewards[day - 1];
+      if (reward.coin) { p.coin += reward.coin; p.iron += reward.iron; }
+      else {
+        for (const id of [reward.bundle, reward.skin]) if (id && !p.owned[id]) p.owned[id] = true;
+        if (reward.gloo) p.ownedGlooSkins[reward.gloo] = true;
+      }
+      p.newbieDaily = { day, lastDay: today };
+      result = { day, reward };
+      break;
+    }
+    case 'setFriends': {
+      if (!Array.isArray(action.friends)) fail('Daftar teman tidak valid');
+      p.friends = [...new Set(action.friends.map(x => cleanName(x)))].slice(0, 100);
+      break;
+    }
+    case 'buyAvatar': {
+      const a = AVATARS.find(x => x.id === action.id);
+      if (!a) fail('Avatar tidak ditemukan');
+      if (p.ownedAvatars?.[a.id]) fail('Avatar sudah dimiliki');
+      if (p.coin < a.price) fail('Coin tidak cukup');
+      p.coin -= a.price; p.ownedAvatars ||= {}; p.ownedAvatars[a.id] = true;
+      break;
+    }
+    case 'setAvatar': {
+      if (action.id && !p.ownedAvatars?.[action.id]) fail('Avatar belum dimiliki');
+      p.avatar = action.id || '';
+      break;
+    }
+    case 'buyGlooSkin': {
+      const g = GLOO_SKINS[action.id];
+      if (!g) fail('Skin Gloo Wall tidak ditemukan');
+      p.ownedGlooSkins ||= { gloo_default: true };
+      if (p.ownedGlooSkins[g.id]) fail('Skin sudah dimiliki');
+      if (p.coin < g.price) fail('Coin tidak cukup');
+      p.coin -= g.price; p.ownedGlooSkins[g.id] = true;
+      break;
+    }
+    case 'setGlooSkin': {
+      if (!GLOO_SKINS[action.id] || !p.ownedGlooSkins?.[action.id]) fail('Skin Gloo Wall belum dimiliki');
+      p.glooSkin = action.id;
+      break;
+    }
+    case 'claimEvent': {
+      const tasks = {
+        login1: { key: 'logins', goal: 1, reward: { coin: 300 } }, login3: { key: 'logins', goal: 3, reward: { iron: 600 } },
+        login7: { key: 'logins', goal: 7, reward: { coin: 1500, iron: 1000 } },
+        kill1: { key: 'kills', goal: 1, reward: { coin: 250 } }, kill5: { key: 'kills', goal: 5, reward: { coin: 750 } },
+        kill10: { key: 'kills', goal: 10, reward: { iron: 1000 } },
+        death3: { key: 'deaths', goal: 3, reward: { coin: 500 } }, death10: { key: 'deaths', goal: 10, reward: { iron: 1000 } },
+        revive1: { key: 'revives', goal: 1, reward: { coin: 500 } }, revive5: { key: 'revives', goal: 5, reward: { coin: 1200 } },
+        weapon5: { key: 'weaponKills', goal: 5, reward: { coin: 700 } }, weapon20: { key: 'weaponKills', goal: 20, reward: { iron: 1500 } },
+        bundle1: { key: 'bundles', goal: 1, reward: { coin: 300 } },
+        weeklyKills: { key: 'weeklyKills', goal: 25, reward: { coin: 2500, iron: 1000 } },
+        monthlyLogin: { key: 'monthlyLogins', goal: 20, reward: { coin: 3000, iron: 2000 } },
+        ramadhanLogin: { key: 'ramadhanLogins', goal: 7, reward: { coin: 2000, iron: 2000 } },
+      };
+      const task = tasks[action.id];
+      if (!task) fail('Event tidak ditemukan');
+      p.eventClaims ||= {};
+      if (p.eventClaims[action.id]) fail('Hadiah sudah diklaim');
+      const progress = p.eventProgress?.[task.key] || 0;
+      if (progress < task.goal) fail('Target event belum tercapai');
+      if (task.reward.coin) p.coin += task.reward.coin;
+      if (task.reward.iron) p.iron += task.reward.iron;
+      p.eventClaims[action.id] = true; result = task.reward;
+      break;
+    }
     case 'buyChar': {
       const c = CHARACTERS[action.id];
       if (!c) fail('Karakter tidak ada');
@@ -140,6 +232,14 @@ export function applyAction(profile, action, { now = Date.now(), rng = Math.rand
       result = { rewards: Array.from({ length: count }, () => rollOne(p, action.banner, rng)) };
       break;
     }
+    case 'splitBundle': {
+      const parts = BUNDLE_PARTS[action.id];
+      if (!parts || !p.owned[action.id]) fail('Bundle belum dimiliki atau tidak bisa dipisah');
+      p.ownedParts ||= {};
+      for (const id of Object.values(parts)) p.owned[id] = true;
+      result = { parts: Object.values(parts) };
+      break;
+    }
     case 'equip': {
       if (!SLOTS.includes(action.slot)) fail('Slot tidak valid');
       if (action.id == null) { delete p.equipped[action.slot]; break; }
@@ -148,7 +248,7 @@ export function applyAction(profile, action, { now = Date.now(), rng = Math.rand
       p.equipped[action.slot] = action.id;
       // Bundle menggantikan seluruh outfit; memakai item outfit melepas bundle
       if (OUTFIT.includes(action.slot)) delete p.equipped.bundle;
-      if (action.slot === 'bundle') OUTFIT.forEach((s) => delete p.equipped[s]);
+      if (action.slot === 'bundle') { OUTFIT.forEach((s) => delete p.equipped[s]); p.eventProgress ||= {}; p.eventProgress.bundles = (p.eventProgress.bundles || 0) + 1; }
       break;
     }
     case 'equipSkin': {
@@ -182,6 +282,13 @@ export function applyAction(profile, action, { now = Date.now(), rng = Math.rand
       const coin = 40 + kills * 25 + (win ? 150 : 0);
       const before = rankIndex(p.exp);
       p.exp += exp; p.coin += coin; p.rank = rankIndex(p.exp); p.lastMatchAt = now;
+      p.eventProgress ||= {};
+      p.eventProgress.kills = (p.eventProgress.kills || 0) + kills;
+      const week = weekKey(now);
+      if (p.eventProgress.weekKey !== week) { p.eventProgress.weekKey = week; p.eventProgress.weeklyKills = 0; }
+      p.eventProgress.weeklyKills = (p.eventProgress.weeklyKills || 0) + kills;
+      p.eventProgress.weaponKills = (p.eventProgress.weaponKills || 0) + kills;
+      if (!win) p.eventProgress.deaths = (p.eventProgress.deaths || 0) + 1;
       p.stats.matches++; p.stats.wins += win ? 1 : 0; p.stats.kills += kills; p.stats.assists += assists; p.stats.damage += damage;
       result = { exp, base, coin, kills, assists, damage, placement, survival, win, rankBefore: before, rankAfter: p.rank };
       break;

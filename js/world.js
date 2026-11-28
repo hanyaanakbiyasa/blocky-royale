@@ -22,7 +22,34 @@ export function vehicleSolid(v) {
   return { x0: v.x - hx, x1: v.x + hx, y0: 0, y1: 1.7, z0: v.z - hz, z1: v.z + hz };
 }
 
-export function generateWorld(seed) {
+export function generateWorld(seed, mode = 'br') {
+  if (mode === 'social') {
+    const visuals = [], solids = [], spots = [], buildings = [], vehicles = [], loot = [];
+    const block = (x,y,z,w,h,d,c,solid=true) => { visuals.push([x,y+h/2,z,w,h,d,c]); if(solid) solids.push({x0:x-w/2,x1:x+w/2,y0:y,y1:y+h,z0:z-d/2,z1:z+d/2}); };
+    block(0,-2,0,200,2,200,0x65b8a0,false);
+    block(0,0,-18,48,.5,26,0xd8c59a,false); block(0,0,20,58,.5,30,0xd6b67c,false);
+    block(0,0,0,18,.2,18,0x5bb8d0,false);
+    for(let i=0;i<18;i++){const a=i/18*Math.PI*2,x=Math.cos(a)*72,z=Math.sin(a)*72;block(x,0,z,3,2.4,3,0x2f855a,false);block(x,2.2,z,7,2,7,0x36a269,false);}
+    for(const [x,z,c] of [[-24,-18,0x2563eb],[24,-18,0xf97316],[-24,20,0xa855f7],[24,20,0x16a34a]]){block(x,0,z,12,.4,10,0xe8d9bd,false);block(x,1.2,z,10,2.4,1,c);block(x,2.5,z,3,.3,1,0xf8fafc,false);}
+    block(0,0,0,5,.3,5,0x38bdf8,false);
+    for(let i=0;i<30;i++){const a=i*2.399,x=Math.cos(a)*(12+i%5*8),z=Math.sin(a)*(12+i%5*8);block(x,0,z,1.2,.6,1.2,0x8b6b45,false);}
+    return { visuals, solids, spots, taken:[], buildings, vehicles, loot };
+  }
+  if (mode === 'training') {
+    const visuals=[],solids=[],spots=[],buildings=[],vehicles=[],loot=[];
+    const block=(x,y,z,w,h,d,c,solid=true)=>{visuals.push([x,y+h/2,z,w,h,d,c]);if(solid)solids.push({x0:x-w/2,x1:x+w/2,y0:y,y1:y+h,z0:z-d/2,z1:z+d/2});};
+    block(0,-2,0,120,2,120,0x626b54,false);
+    block(0,0,0,32,.3,28,0x9a9a8b,false);
+    for(const [x,z] of [[-16,0],[16,0],[0,-14],[0,14]]) block(x,0,z,.6,5,28,0x777e88);
+    block(0,5,0,32,.6,28,0x505866);
+    block(38,0,0,44,.3,38,0x6f795e,false);
+    for(const [x,z] of [[16,0],[60,0],[38,-19],[38,19]]) block(x,0,z,.6,5,38,0x7a8792);
+    block(38,5,0,44,.6,38,0x56616d);
+    block(0,.15,-8,5,.25,5,0x22d3ee,false); block(38,.15,-12,5,.25,5,0x22d3ee,false);
+    for(let i=0;i<8;i++){const x=-12+i*3;block(x,.1,8,2,.8,2,0x9b6b34,false);block(x,.95,8,2,.15,2,0x6b4720,false);}
+    for(let i=0;i<7;i++){const x=23+i*5;block(x,.1,8,2,.8,2,0x9b6b34,false);block(x,1,8,1.8,.1,1.8,0x6b4720,false);spots.push([x,1.1,8]);}
+    return { visuals, solids, spots, taken:[], buildings, vehicles, loot };
+  }
   const rng = seeded(seed);
   const rand = (a, b) => a + rng() * (b - a);
   const pick = (l) => l[Math.floor(rng() * l.length)];

@@ -51,9 +51,14 @@
       <button data-open="weapon"><span data-icon="weapon"></span>Weapon</button>
       <button data-open="chars"><span data-icon="bag"></span>Karakter</button>
       <button data-open="mystery"><span data-icon="gift"></span>Mystery</button>
+      <button data-open="newbie"><span data-icon="calendar"></span>Newbie Daily</button>
+      <button data-open="events"><span data-icon="trophy"></span>Events</button>
+      <button data-open="avatars"><span data-icon="user"></span>Avatar</button>
+      <button data-open="gloo"><span data-icon="shield"></span>Gloo Wall</button>
     </nav>
     <nav id="topright" class="topright">
       <button data-open="admin" id="adminBtn" hidden aria-label="Panel Admin"><span data-icon="settings"></span><small>Admin</small></button>
+      <button data-open="friends" id="friendBtn" aria-label="Friends"><span data-icon="users"></span><small>Friends</small></button>
       <button data-open="board" aria-label="Leaderboard"><span data-icon="board"></span><small>Leaderboard</small></button>
       <button data-open="settings" aria-label="Settings"><span data-icon="settings"></span><small>Settings</small></button>
       <button id="logoutBtn" aria-label="Log out"><span data-icon="exit"></span><small>Log out</small></button>
@@ -64,9 +69,11 @@
       <span id="netState" class="net"></span>
     </div>
     <div class="turns"><button id="turnL" class="iconbtn" data-icon="left" aria-label="Putar kiri"></button><button id="turnR" class="iconbtn" data-icon="right" aria-label="Putar kanan"></button></div>
+    <button id="friendQuick" class="friendquick"><span data-icon="users"></span><small>Friends</small></button>
     <div class="playdock">
       <div class="mode"><button id="modePrev" class="iconbtn" data-icon="left" aria-label="Mode sebelumnya"></button><div id="modeList"></div><button id="modeNext" class="iconbtn" data-icon="right" aria-label="Mode berikutnya"></button></div>
       <small id="modeDesc"></small>
+      <label class="mapselect">MAP <select id="mapSelect"><option value="andromeda">Andromeda</option><option value="zipper">Zipper</option><option value="tel_mista">Tel Mista</option><option value="oslo">Oslo</option><option value="ngawi">Ngawi</option><option value="jomokerto">Jomokerto</option></select></label>
       <button id="playBtn" class="play"><span data-icon="play"></span> PLAY MATCHMAKING</button>
     </div>
   </main>
@@ -116,6 +123,8 @@
         <button id="bChat" class="hbtn txt" hidden><small>Chat</small></button>
         <button id="bHeal" class="hbtn" aria-label="Pulihkan"><span data-icon="heal"></span><small>Heal</small></button>
       </div>
+      <button id="bTrainingPortal" class="hbtn txt" hidden>Masuk Range</button>
+      <button id="bGloo" class="hbtn" aria-label="Pasang Gloo Wall"><span data-icon="shield"></span><small>Gloo</small></button>
       <button id="bFire" aria-label="Tembak"></button>
       <div id="inventory" class="panel" hidden></div>
     </div>

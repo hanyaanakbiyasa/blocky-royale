@@ -5,7 +5,7 @@ import { startWar } from './war.js';
 import { applySettings } from './settings.js';
 import { $, hydrate, toast, renderProfile, initLobby, closeModal, showResults, goLandscape, rankBadge, esc } from './ui.js';
 import { createStage } from './preview.js';
-import { findMatch } from './net.js';
+import { findMatch, publishPlayerPresence, getActiveParty, requestPartyMatch } from './net.js';
 import { startGame } from './game.js';
 
 applySettings();
@@ -59,7 +59,9 @@ async function play(mode) {
   $('#mmCancel').onclick = () => abort.abort();
   if (!store.online && !quick(mode)) toast('Koneksi terputus, mode offline');
   try {
-    const match = await findMatch(mode, store.profile, abort.signal);
+    const party = getActiveParty();
+    const mapId = mode === 'training' ? 'training-ground' : mode === 'social' ? 'social-island' : (party?.matchRequest?.status === 'launching' ? party.matchRequest.map : ($('#mapSelect')?.value || 'andromeda'));
+    const match = await findMatch(mode, store.profile, abort.signal, mapId, party?.matchRequest?.status === 'launching' ? party : null);
     clearInterval(tick);
     status.textContent = quick(mode) ? 'Siap!' : 'Match Found!'; box.classList.add('done');
     found.innerHTML = match.roster.filter((r) => !r.me).slice(0, 11).map((r) => `<div>${rankBadge(r.rank, 'sm')} ${esc(r.name)}${r.bot ? ' <small>BOT</small>' : ''}</div>`).join('');
@@ -115,9 +117,25 @@ $('#loginForm').onsubmit = async (e) => {
   finally { btn.disabled = false; }
 };
 
+let partyLaunchHandled = '';
+window.addEventListener('br-party-updated', (e) => {
+  const p = e.detail;
+  const launchKey = p?.matchRequest ? `${p.id}_${p.matchRequest.createdAt || p.matchRequest.mode}` : '';
+  if (p?.matchRequest?.status === 'launching' && launchKey !== partyLaunchHandled) {
+    partyLaunchHandled = launchKey;
+    window.dispatchEvent(new CustomEvent('br-party-start', { detail: { mode: p.matchRequest.mode } }));
+  }
+});
+
+window.addEventListener('br-party-start', async (e) => {
+  const party = getActiveParty();
+  if (!party || party.matchRequest?.status !== 'launching') return;
+  play(e.detail?.mode || party.matchRequest.mode || 'br');
+});
+
 loadProfile().catch((e) => { console.error(e); }).then(async () => {
   clearInterval(prog); setPct(100); $('#loadText').textContent = 'Siap!'; await new Promise((r) => setTimeout(r, 450));
   if (store.error) toast(store.error);
-  if (store.profile) enterLobby();
+  if (store.profile) { enterLobby(); publishPlayerPresence(store.profile).catch((e) => console.warn('Presence gagal:', e.message)); }
   else show('login');
 });

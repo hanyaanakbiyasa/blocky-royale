@@ -144,10 +144,26 @@ export const BANNERS = {
 export const RATES = [['bundle', 2], ['evo', 2], ['skin', 10], ['item', 22], ['token', 24], ['coin', 40]];
 export const PITY = 40; // spin ke-40 tanpa hadiah legend pasti dapat Bundle/Evo yang belum dimiliki
 export const SPIN_COST = { 1: 50, 10: 300 };
+
+export const GLOO_SKINS = {
+  gloo_default: { id: 'gloo_default', name: 'Dinding Es', price: 0, color: 0x8bdcf4, accent: 0xffffff },
+  gloo_indonesia: { id: 'gloo_indonesia', name: 'Merah Putih', price: 650, color: 0xffffff, accent: 0xdc2626 },
+  gloo_neon: { id: 'gloo_neon', name: 'Neon Pulse', price: 900, color: 0x7c3aed, accent: 0x22d3ee },
+  gloo_lava: { id: 'gloo_lava', name: 'Lava Core', price: 1200, color: 0x7f1d1d, accent: 0xfb923c },
+  gloo_gold: { id: 'gloo_gold', name: 'Royal Gold', price: 1800, color: 0xfbbf24, accent: 0xffffff },
+};
+export const AVATARS = ['indonesia','malaysia','weapon','skull','fighter','ngawi','jomok','bobby','tricky','sinpo','dev','ultra','roblox'].map(id => ({ id, name: id[0].toUpperCase()+id.slice(1), src: `avatars/png/${id}.png`, price: 50 }));
+export const MAPS = [
+  { id: 'andromeda', name: 'Andromeda' }, { id: 'zipper', name: 'Zipper' },
+  { id: 'tel_mista', name: 'Tel Mista' }, { id: 'oslo', name: 'Oslo' },
+  { id: 'ngawi', name: 'Ngawi' }, { id: 'jomokerto', name: 'Jomokerto' },
+];
+
 export const MODES = [
   { id: 'br', name: 'BATTLE ROYALE', desc: '12 petarung, turun dari pesawat, zona mengecil', total: 12 },
   { id: 'clash', name: 'CLASH ARENA', desc: '6 petarung di arena kota, langsung bersenjata', total: 6 },
-  { id: 'training', name: 'TRAINING', desc: 'Semua senjata, target diam, tanpa risiko', total: 7 },
+  { id: 'training', name: 'TRAINING', desc: 'Tempat latihan, crate perlengkapan, dan lapangan tembak', total: 7 },
+  { id: 'social', name: 'SOCIAL ISLAND', desc: 'Pulau santai untuk berkumpul dan bermain', total: 12 },
 ];
 
 // ---- Mystery Shop (event, hanya dijual saat event aktif) ----
@@ -204,3 +220,22 @@ export const CHARACTERS = {
 // Medkit dan scope
 export const MEDS = { medkit: { name: 'Medkit', hp: 50, time: 4 }, super: { name: 'Super Medkit', hp: 100, time: 6 } };
 MODES.push({ id: 'social', name: 'SOCIAL ISLAND', desc: 'Pulau santai: tanpa senjata, jalan-jalan, emote, dan ngobrol', total: 8 });
+
+export const BUNDLE_PARTS = {};
+for (const [id, bundleItem] of Object.entries(ITEMS).filter(([, item]) => item.slot === 'bundle')) {
+  const look = bundleItem.look || {};
+  const boxes = look.boxes || [];
+  const parts = {
+    hat: { boxes: boxes.filter(([part]) => part === 'head'), hair: look.hair, beard: look.beard },
+    acc: { boxes: [] },
+    clothes: { torso: look.torso, arms: look.arms, boxes: boxes.filter(([part]) => part === 'torso' || part === 'armL' || part === 'armR') },
+    pants: { legs: look.legs, boxes: boxes.filter(([part]) => part === 'legL' || part === 'legR') },
+    shoes: { feet: look.feet, boxes: [] },
+  };
+  for (const [slot, partLook] of Object.entries(parts)) {
+    const partId = `bp_${id}_${slot}`;
+    ITEMS[partId] = { id: partId, slot, name: `${bundleItem.name} - ${({hat:'Head',acc:'Accessories',clothes:'Clothes',pants:'Pants',shoes:'Shoes'})[slot]}`, price: 0, look: partLook, rarity: 'legend', sourceBundle: id };
+    BUNDLE_PARTS[id] ||= {};
+    BUNDLE_PARTS[id][slot] = partId;
+  }
+}

@@ -199,3 +199,41 @@ h5{color:var(--dim);font-size:13px;text-transform:uppercase;margin:6px 0 2px}
 .topright button:hover{border-color:var(--purple)}
 #logoutBtn .ic{color:#f87171}
 @media (max-width:640px){.actions{top:152px;bottom:200px;left:6px}.leftdock{top:auto;bottom:14px}}
+
+.avatar.has-avatar{background-size:cover;background-position:center;color:transparent}
+.mapselect{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--dim)}
+.mapselect select{width:auto;min-width:125px;padding:5px 8px}
+.gloo-preview{height:110px;border:4px solid var(--accent);background:linear-gradient(90deg,var(--gloo),var(--accent),var(--gloo));clip-path:polygon(8% 0,92% 0,100% 12%,100% 88%,92% 100%,8% 100%,0 88%,0 12%);box-shadow:0 0 18px var(--gloo)}
+#hud .hbtn,#bFire{border-radius:50%!important;aspect-ratio:1}
+#bJump{width:58px;height:58px;border-radius:50%;order:3}
+#bCrouch,#bProne{width:40px;height:40px;border-radius:50%;font-size:11px}
+.stance{display:flex;align-items:flex-end;gap:7px}
+#bBag{border-radius:50%;width:48px;height:48px}
+.sidebtns .hbtn{border-radius:50%;width:46px;height:46px}
+#bFire{width:72px;height:72px;display:grid;place-items:center}
+#bFire .ic{font-size:28px}
+@media(max-width:700px){.actions{max-width:calc(100% - 20px);top:84px;left:8px;right:8px}.profile{width:min(310px,calc(100% - 20px))}.topright{top:8px}.playdock{width:min(300px,55vw)}}
+
+.stance{left:auto;right:18px;bottom:14px;width:126px;height:112px;display:block}
+#bJump{position:absolute;right:0;bottom:0;width:58px;height:58px}
+#bProne{position:absolute;right:70px;bottom:0}
+#bCrouch{position:absolute;right:70px;bottom:50px}
+#bBag{position:absolute;right:150px;bottom:48px}
+#bGloo{position:absolute;right:112px;bottom:160px;width:48px;height:48px}
+[data-joystick=left] .stance{right:18px;left:auto}
+[data-joystick=left] #bBag{right:150px;left:auto}
+[data-joystick=left] #bGloo{right:112px;left:auto}
+#bJump,#bProne,#bCrouch,#bBag,#bGloo,#bReload,#bDash,#bHeal,#bScope,#bSkill,#bCar,#bEmote,#bChat{border-radius:50%;display:grid;place-items:center}
+#bJump small,#bProne small,#bCrouch small,#bBag small,#bGloo small{font-size:9px}
+
+#bJumpPlane{width:68px;height:68px;border-radius:50%;padding:6px;display:grid;place-items:center;font-size:11px}
+#bPickup{border-radius:28px}
+
+.friendquick{position:absolute;right:max(18px,env(safe-area-inset-right));bottom:120px;width:58px;height:58px;border-radius:50%;background:var(--panel);border:2px solid var(--line);display:grid;place-items:center;gap:0;color:var(--cyan)}
+.friendquick .ic{font-size:22px}.friendquick small{font-size:9px}
+#bTrainingPortal{position:absolute;left:50%;bottom:34%;transform:translateX(-50%);border-color:var(--cyan);background:#083344e8;z-index:4;min-width:112px}
+.eventgroup{margin-bottom:22px}.eventgroup>h3{position:sticky;top:0;background:var(--panel);padding:8px;z-index:1;border-bottom:1px solid var(--line)}
+.eventgroup .bar{height:8px;margin:8px 0}.eventgroup .bar b{background:var(--cyan)}.partybox{padding:12px;margin-top:16px}
+
+.squad-roster{position:fixed;top:calc(env(safe-area-inset-top) + 12px);left:12px;z-index:30;display:flex;flex-direction:column;gap:4px;padding:8px 11px;background:rgba(8,12,20,.72);border:1px solid rgba(255,255,255,.16);border-radius:10px;color:#fff;font-size:12px;font-weight:700;pointer-events:none;backdrop-filter:blur(8px)}
+.squad-roster div{white-space:nowrap}

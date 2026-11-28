@@ -201,3 +201,12 @@ Setelah mengubah, jalankan `npm test`, lalu push ulang.
 - **Progres offline** tersimpan terpisah dan tidak digabung ke akun online.
 - Kuota gratis Firebase terbatas. Pantau di console bila pemain banyak.
 - Data ruang pertandingan lama bisa tersisa di Realtime Database; node `rooms` dan `queue` aman dihapus berkala saat tidak ada yang bermain.
+
+## 5f. Update lanjutan
+
+- **Bundle terpisah**: buka Vault > Bundle, pilih `Pisahkan menjadi item`. Bagian bundle akan masuk ke kategori Hat, Accessories, Clothes, Pants, dan Shoes. Setiap bagian dapat dipakai atau dilepas sendiri.
+- **Events**: buka Events untuk melihat kategori Harian, Mingguan, Bulanan, Master Challenge, dan Ramadhan. Progress login/kill disimpan di profil; kill mingguan reset mengikuti minggu WIB dan login bulanan reset saat pergantian bulan WIB.
+- **Training**: mulai mode Training. Ambil perlengkapan dari meja crate di ruang persiapan. Dekati portal cyan lalu tekan `Masuk Range`; gunakan portal di firing range untuk kembali. Bot latihan hanya terlihat di firing range.
+- **Social Island**: memakai pulau dan plaza tersendiri, bukan generator map pertempuran.
+
+Party online empat pemain, undangan dan persetujuan, spectator squad, revive, serta minigame Social Island masih dalam tahap pengembangan dan belum boleh dianggap tersedia.
